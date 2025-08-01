@@ -1,0 +1,464 @@
+name: CI - Complete Validation Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+
+env:
+  PYTHON_VERSION: '3.11'
+  CUDA_VERSION: '12.1'
+  
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =============================================================================
+  # Code Quality & Security
+  # =============================================================================
+  quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+    
+    - name: Run pre-commit hooks
+      uses: pre-commit/action@v3.0.0
+      with:
+        extra_args: --all-files
+    
+    - name: Security scan with Bandit
+      run: |
+        bandit -r hd_compute/ -f json -o bandit-report.json
+        bandit -r hd_compute/ -f txt
+    
+    - name: Dependency vulnerability check
+      run: |
+        safety check --json --output safety-report.json || true
+        safety check
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+  
+  # =============================================================================
+  # Unit Tests
+  # =============================================================================
+  test-unit:
+    name: Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+    
+    - name: Run unit tests
+      run: |
+        pytest tests/unit/ -v \
+          --cov=hd_compute \
+          --cov-report=xml \
+          --cov-report=html \
+          --junit-xml=junit-results.xml \
+          --cov-fail-under=80
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unit-tests
+        name: codecov-py${{ matrix.python-version }}
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-py${{ matrix.python-version }}
+        path: |
+          junit-results.xml
+          htmlcov/
+          coverage.xml
+
+  # =============================================================================
+  # GPU Tests
+  # =============================================================================
+  test-gpu:
+    name: GPU Tests
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 45
+    if: github.event_name != 'schedule'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install CUDA dependencies
+      run: |
+        wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb
+        sudo dpkg -i cuda-keyring_1.0-1_all.deb
+        sudo apt-get update
+        sudo apt-get -y install cuda-toolkit-${{ env.CUDA_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+        pip install -e ".[dev]"
+    
+    - name: Check GPU availability
+      run: |
+        nvidia-smi
+        python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
+        python -c "import torch; print(f'GPU count: {torch.cuda.device_count()}')"
+    
+    - name: Run GPU tests
+      run: |
+        pytest tests/ -m gpu -v \
+          --cov=hd_compute \
+          --cov-report=xml \
+          --junit-xml=gpu-test-results.xml
+    
+    - name: Upload GPU test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: gpu-test-results
+        path: |
+          gpu-test-results.xml
+          coverage.xml
+
+  # =============================================================================
+  # Integration Tests
+  # =============================================================================
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [quality, test-unit]
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: hdc_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+    
+    - name: Run integration tests
+      env:
+        DATABASE_URL: postgresql://postgres:testpass@localhost:5432/hdc_test
+        REDIS_URL: redis://localhost:6379
+      run: |
+        pytest tests/integration/ tests/e2e/ -v \
+          --cov=hd_compute \
+          --cov-report=xml \
+          --junit-xml=integration-results.xml \
+          --timeout=300
+    
+    - name: Upload integration test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: integration-test-results
+        path: |
+          integration-results.xml
+          coverage.xml
+
+  # =============================================================================
+  # Performance Benchmarks
+  # =============================================================================
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 90
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[benchmark]')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install pytest-benchmark psutil py-spy
+    
+    - name: Run performance benchmarks
+      run: |
+        pytest tests/performance/ -v \
+          --benchmark-only \
+          --benchmark-json=benchmark-results.json \
+          --benchmark-sort=mean \
+          --benchmark-columns=min,max,mean,stddev
+    
+    - name: Profile memory usage
+      run: |
+        python -m memory_profiler -o memory-profile.txt \
+          python -m hd_compute.benchmarks --profile-memory
+    
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: |
+          benchmark-results.json
+          memory-profile.txt
+
+  # =============================================================================
+  # Documentation Build
+  # =============================================================================
+  docs:
+    name: Documentation Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[docs]"
+    
+    - name: Build documentation
+      run: |
+        cd docs
+        make html SPHINXOPTS="-W --keep-going"
+    
+    - name: Check documentation coverage
+      run: |
+        interrogate hd_compute/ --verbose --fail-under=80
+    
+    - name: Upload documentation
+      uses: actions/upload-artifact@v3
+      with:
+        name: documentation
+        path: docs/_build/html/
+
+  # =============================================================================
+  # Docker Build
+  # =============================================================================
+  docker:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [quality]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build development image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        target: development
+        tags: hd-compute-toolkit:dev
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Build production image
+      uses: docker/build-push-action@v5
+      with:
+        context: .  
+        target: production
+        tags: hd-compute-toolkit:prod
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Test Docker containers
+      run: |
+        docker run --rm hd-compute-toolkit:prod python -c "import hd_compute; print('OK')"
+        docker run --rm hd-compute-toolkit:dev pytest --version
+
+  # =============================================================================
+  # SBOM Generation
+  # =============================================================================
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [quality]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install cyclonedx-bom
+    
+    - name: Generate SBOM
+      run: |
+        cyclonedx-py -o sbom.json
+        cyclonedx-py -o sbom.xml --format xml
+    
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v3
+      with:
+        name: sbom
+        path: |
+          sbom.json
+          sbom.xml
+
+  # =============================================================================
+  # Mutation Testing
+  # =============================================================================
+  mutation:
+    name: Mutation Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    if: github.event_name == 'schedule'
+    needs: [test-unit]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install mutmut
+    
+    - name: Run mutation tests
+      run: |
+        mutmut run --paths-to-mutate hd_compute/core/
+        mutmut results > mutation-results.txt
+    
+    - name: Upload mutation test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: mutation-results
+        path: mutation-results.txt
+
+  # =============================================================================
+  # Notify Results
+  # =============================================================================
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [quality, test-unit, test-integration, docs, docker]
+    
+    steps:
+    - name: Report Status
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const needs = ${{ toJson(needs) }};
+          const results = Object.entries(needs).map(([job, result]) => 
+            `${job}: ${result.result}`
+          ).join('\n');
+          
+          console.log('Job Results:');
+          console.log(results);
+          
+          const failed = Object.values(needs).some(job => job.result === 'failure');
+          if (failed) {
+            core.setFailed('Some jobs failed');
+          }

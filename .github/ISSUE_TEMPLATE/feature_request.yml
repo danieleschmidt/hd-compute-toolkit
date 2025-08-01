@@ -1,0 +1,248 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your interest in improving HD-Compute-Toolkit! Please provide as much detail as possible about your feature request.
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify the following before submitting
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have checked the [roadmap](../docs/ROADMAP.md) to see if this is already planned
+          required: true
+        - label: This feature aligns with the project's goals and scope
+          required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: What category does this feature belong to?
+      options:
+        - Core HDC Operations
+        - Backend Implementation (PyTorch/JAX)
+        - Hardware Acceleration (FPGA/Vulkan)
+        - Memory Structures
+        - Applications/Examples
+        - Performance Optimization
+        - Documentation
+        - Developer Experience
+        - Testing/Quality Assurance
+        - Other (please specify in description)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Critical (blocking my work)
+        - High (would significantly improve my workflow)
+        - Medium (would be nice to have)
+        - Low (minor improvement)
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: A brief, clear summary of the feature you'd like to see
+      placeholder: Provide a concise summary of the requested feature...
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What use case does it address?
+      placeholder: |
+        - What specific problem are you trying to solve?
+        - What is your current workaround (if any)?
+        - Why is this important for the HD computing community?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see implemented
+      placeholder: |
+        - How would you like this feature to work?
+        - What should the API look like?
+        - Are there existing implementations elsewhere that could serve as reference?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Describe any alternative solutions or features you've considered
+      placeholder: What other approaches could solve this problem?
+    validations:
+      required: false
+
+  - type: textarea
+    id: api_design
+    attributes:
+      label: API Design (if applicable)
+      description: If this involves new APIs, please provide a proposed design
+      render: python
+      placeholder: |
+        # Example of how the new API might look
+        hdc = HDCompute(dim=10000)
+        
+        # New feature usage
+        result = hdc.new_feature(parameters...)
+    validations:
+      required: false
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Use Cases & Examples
+      description: Provide specific examples of how this feature would be used
+      placeholder: |
+        1. Use case 1: [describe scenario and how feature helps]
+        2. Use case 2: [describe scenario and how feature helps]
+        3. Use case 3: [describe scenario and how feature helps]
+    validations:
+      required: true
+
+  - type: textarea
+    id: research
+    attributes:
+      label: Research Background
+      description: Are there relevant papers, algorithms, or implementations?
+      placeholder: |
+        - Link to relevant research papers
+        - Reference implementations in other libraries
+        - Theoretical background or mathematical foundations
+    validations:
+      required: false
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Implementation Complexity
+      description: How complex do you think this feature would be to implement?
+      options:
+        - Simple (few lines of code, existing patterns)
+        - Moderate (new module, some research needed)
+        - Complex (significant architecture changes)
+        - Very Complex (extensive research and development)
+        - Unknown
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: requirements
+    attributes:
+      label: Requirements
+      description: What requirements does this feature have?
+      options:
+        - label: Requires new dependencies
+        - label: Requires hardware acceleration support
+        - label: Requires breaking API changes
+        - label: Requires extensive documentation
+        - label: Requires new testing infrastructure
+        - label: Requires performance benchmarking
+
+  - type: textarea
+    id: performance
+    attributes:
+      label: Performance Considerations
+      description: Are there any performance implications or requirements?
+      placeholder: |
+        - Expected performance characteristics
+        - Memory usage implications
+        - Scalability requirements
+        - Hardware compatibility needs
+    validations:
+      required: false
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Backward Compatibility
+      description: How would this feature affect existing code?
+      placeholder: |
+        - Would this break existing APIs?
+        - Can it be implemented in a backward-compatible way?
+        - What migration path would be needed?
+    validations:
+      required: false
+
+  - type: textarea
+    id: testing
+    attributes:
+      label: Testing Strategy
+      description: How should this feature be tested?
+      placeholder: |
+        - Unit tests needed
+        - Integration tests needed
+        - Performance benchmarks needed
+        - Hardware-specific testing requirements
+    validations:
+      required: false
+
+  - type: textarea
+    id: documentation
+    attributes:
+      label: Documentation Requirements
+      description: What documentation would be needed?
+      placeholder: |
+        - API documentation
+        - Tutorial examples
+        - Performance guides
+        - Migration guides
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to contribute?
+      options:
+        - label: I would be willing to implement this feature
+        - label: I would be willing to help with testing
+        - label: I would be willing to help with documentation
+        - label: I can provide domain expertise/research
+        - label: I can help with code review
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Desired Timeline
+      description: Is there a specific timeline for when you need this feature?
+      placeholder: |
+        - When do you need this feature?
+        - Are there any external deadlines or dependencies?
+        - Would a partial implementation be useful?
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the feature request
+      placeholder: Any additional information that might be helpful...
+    validations:
+      required: false

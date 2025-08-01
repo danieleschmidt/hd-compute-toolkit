@@ -1,0 +1,178 @@
+name: Bug Report
+description: File a bug report to help us improve
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please provide as much detail as possible to help us resolve the issue quickly.
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify the following before submitting
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have tested with the latest version of HD-Compute-Toolkit
+          required: true
+        - label: I have read the [troubleshooting guide](../docs/TROUBLESHOOTING.md)
+          required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: HD-Compute-Toolkit Version
+      description: What version of HD-Compute-Toolkit are you running?
+      placeholder: "e.g., 0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: What environment are you using?
+      options:
+        - Local development
+        - Docker container
+        - Google Colab
+        - Jupyter Notebook
+        - Production server
+        - CI/CD pipeline
+        - Other (please specify in description)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      description: Which backend are you using?
+      options:
+        - PyTorch (CPU)
+        - PyTorch (CUDA)
+        - JAX (CPU)
+        - JAX (TPU)
+        - JAX (GPU)
+        - FPGA
+        - Vulkan
+        - Not applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: Describe the issue you're experiencing...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: Describe what you expected to happen...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: Describe what actually happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Please provide detailed steps to reproduce the issue
+      placeholder: |
+        1. Import hd_compute
+        2. Create HDCompute instance with...
+        3. Call method...
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Minimal Code Example
+      description: Please provide a minimal code example that reproduces the issue
+      render: python
+      placeholder: |
+        import hd_compute
+        
+        # Minimal code that reproduces the issue
+        hdc = hd_compute.HDCompute(dim=1000)
+        # ... rest of code
+    validations:
+      required: false
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error Output
+      description: If applicable, provide the full error traceback
+      render: shell
+      placeholder: Paste the full error output here...
+    validations:
+      required: false
+
+  - type: textarea
+    id: system
+    attributes:
+      label: System Information
+      description: Please provide system information
+      placeholder: |
+        - OS: [e.g., Ubuntu 22.04, macOS 13, Windows 11]
+        - Python version: [e.g., 3.11.0]
+        - PyTorch version: [e.g., 2.1.0]
+        - JAX version: [e.g., 0.4.0]
+        - CUDA version: [e.g., 12.1]
+        - GPU: [e.g., RTX 4090, A100]
+        - Memory: [e.g., 32GB RAM, 24GB VRAM]
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: Any additional information that might be helpful...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this issue?
+      options:
+        - Critical (blocks major functionality)
+        - High (significant impact on functionality)
+        - Medium (minor impact on functionality)
+        - Low (cosmetic or edge case)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to contribute?
+      options:
+        - label: I would be willing to submit a pull request to fix this issue
+          required: false
