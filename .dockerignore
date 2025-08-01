@@ -1,0 +1,171 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+docs/_build/
+docs/_static/generated/
+*.md
+!README.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-*
+.atom/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py.cover
+.hypothesis/
+.pytest_cache/
+cover/
+htmlcov/
+test-results/
+
+# Profiling
+*.prof
+*.profile
+*.trace
+prof/
+
+# Logs
+logs/
+*.log
+tensorboard_logs/
+wandb/
+mlruns/
+.neptune/
+
+# Data and Models
+data/
+datasets/
+checkpoints/
+models/
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.hdf5
+*.pickle
+*.pkl
+
+# Benchmark Results
+benchmarks/results/
+benchmarks/logs/
+perf_results/
+
+# Hardware specific
+*.bit
+*.xclbin
+*.aocx
+*.spv
+*.spirv
+vivado*/
+*.jou
+*.dcp
+*.runs/
+*.sim/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.gen/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+Dockerfile.*
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Security
+.secrets
+*.key
+*.pem
+*.crt
+*.p12
+
+# Development tools
+.pre-commit-config.yaml
+.pre-commit-hooks.yaml
+.editorconfig
+.flake8
+.isort.cfg
+.bandit
+.safety
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.pylint.d/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Package management
+Pipfile*
+poetry.lock
+requirements-dev.txt
+requirements.txt
