@@ -1,54 +1,76 @@
 {
-    "name": "HD-Compute-Toolkit Development",
-    "image": "mcr.microsoft.com/devcontainers/python:3.10-bullseye",
-    
-    "features": {
-        "ghcr.io/devcontainers/features/nvidia-cuda:1": {
-            "installCudnn": true,
-            "installToolkit": true
+  "name": "HD-Compute-Toolkit Development",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11-bullseye",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "ms-python.flake8",
+        "ms-python.mypy-type-checker",
+        "ms-toolsai.jupyter",
+        "redhat.vscode-yaml",
+        "ms-vscode.makefile-tools",
+        "github.vscode-pull-request-github",
+        "ms-vscode.vscode-git-graph",
+        "formulahendry.auto-rename-tag",
+        "streetsidesoftware.code-spell-checker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.formatting.provider": "black",
+        "python.formatting.blackArgs": ["--line-length=88"],
+        "python.linting.enabled": true,
+        "python.linting.flake8Enabled": true,
+        "python.linting.mypyEnabled": true,
+        "python.testing.pytestEnabled": true,
+        "python.testing.unittestEnabled": false,
+        "python.testing.pytestArgs": ["tests"],
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.organizeImports": true
         },
-        "ghcr.io/devcontainers/features/git:1": {},
-        "ghcr.io/devcontainers/features/github-cli:1": {}
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true
+      }
+    }
+  },
+
+  "postCreateCommand": "pip install -e '.[dev]' && pre-commit install",
+  
+  "forwardPorts": [8888, 6006],
+  "portsAttributes": {
+    "8888": {
+      "label": "Jupyter",
+      "protocol": "http"
     },
-    
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "ms-python.python",
-                "ms-python.black-formatter",
-                "ms-python.isort", 
-                "ms-python.mypy-type-checker",
-                "ms-python.flake8",
-                "github.copilot",
-                "github.copilot-chat",
-                "ms-vscode.test-adapter-converter"
-            ],
-            "settings": {
-                "python.defaultInterpreterPath": "/usr/local/bin/python",
-                "python.linting.enabled": true,
-                "python.linting.flake8Enabled": true,
-                "python.linting.mypyEnabled": true,
-                "python.formatting.provider": "black",
-                "editor.formatOnSave": true
-            }
-        }
-    },
-    
-    "containerEnv": {
-        "PYTHONPATH": "/workspaces/hd-compute-toolkit"
-    },
-    
-    "mounts": [
-        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-    ],
-    
-    "postCreateCommand": "pip install -e '.[dev]' && pre-commit install",
-    
-    "forwardPorts": [
-        8000,
-        8080,
-        6006
-    ],
-    
-    "remoteUser": "vscode"
+    "6006": {
+      "label": "TensorBoard", 
+      "protocol": "http"
+    }
+  },
+
+  "mounts": [
+    "source=${localWorkspaceFolder}/.git,target=/workspaces/hd-compute-toolkit/.git,type=bind,consistency=cached"
+  ],
+
+  "remoteUser": "vscode",
+  "workspaceFolder": "/workspaces/hd-compute-toolkit",
+  
+  "containerEnv": {
+    "PYTHONPATH": "/workspaces/hd-compute-toolkit",
+    "CUDA_VISIBLE_DEVICES": "0",
+    "TORCH_CUDA_ARCH_LIST": "7.0;7.5;8.0;8.6"
+  }
 }

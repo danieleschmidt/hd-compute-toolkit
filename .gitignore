@@ -205,3 +205,112 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# =============================================================================
+# HD-Compute-Toolkit Specific
+# =============================================================================
+
+# Data and Models
+data/
+datasets/
+checkpoints/
+models/
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.hdf5
+*.pickle
+*.pkl
+
+# Benchmark Results
+benchmarks/results/
+benchmarks/logs/
+benchmarks/*.json
+benchmarks/*.csv
+perf_results/
+
+# Hardware Acceleration
+*.bit
+*.xclbin
+*.aocx
+*.spv
+*.spirv
+
+# FPGA Development
+vivado*/
+*.jou
+*.log
+*.dcp
+*.runs/
+*.sim/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.gen/
+
+# Vulkan
+*.vert.spv
+*.frag.spv
+*.comp.spv
+vulkan_validation_*
+
+# Logs and Monitoring  
+logs/
+*.log
+tensorboard_logs/
+wandb/
+mlruns/
+.neptune/
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# IDEs and Editors
+.idea/
+.vscode/settings.json
+.vscode/launch.json
+*.sublime-*
+.atom/
+
+# Operating System
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Security
+.secrets
+*.key
+*.pem
+*.crt
+*.p12
+
+# Performance Profiling
+*.prof
+*.profile
+*.trace
+prof/
+
+# Generated Documentation
+docs/api/
+docs/_build/
+docs/_static/generated/
+site/
+
+# Custom Kernels
+kernels/compiled/
+*.cubin
+*.fatbin
