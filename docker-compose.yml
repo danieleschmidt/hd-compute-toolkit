@@ -1,0 +1,281 @@
+version: '3.8'
+
+services:
+  # =============================================================================
+  # Development Environment
+  # =============================================================================
+  hdc-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: hdc-toolkit-dev
+    volumes:
+      - .:/home/hdcuser/hd-compute-toolkit
+      - hdc-venv:/home/hdcuser/venv
+      - jupyter-data:/home/hdcuser/.jupyter
+    ports:
+      - "8888:8888"  # Jupyter
+      - "6006:6006"  # TensorBoard
+      - "5000:5000"  # MLflow
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONPATH=/home/hdcuser/hd-compute-toolkit
+      - JUPYTER_ENABLE_LAB=yes
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    stdin_open: true
+    tty: true
+    command: >
+      bash -c "
+        jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root &
+        tensorboard --logdir=./logs --host=0.0.0.0 --port=6006 &
+        mlflow ui --host=0.0.0.0 --port=5000 &
+        bash
+      "
+
+  # =============================================================================
+  # Testing Environment
+  # =============================================================================
+  hdc-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: testing
+    container_name: hdc-toolkit-test
+    volumes:
+      - .:/home/hdcuser/hd-compute-toolkit
+      - test-results:/home/hdcuser/test-results
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTEST_CURRENT_TEST=1
+      - COVERAGE_CORE=sysmon
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: >
+      bash -c "
+        pytest tests/ -v 
+        --cov=hd_compute 
+        --cov-report=html:/home/hdcuser/test-results/htmlcov 
+        --cov-report=xml:/home/hdcuser/test-results/coverage.xml
+        --junit-xml=/home/hdcuser/test-results/junit.xml
+        --html=/home/hdcuser/test-results/report.html
+      "
+
+  # =============================================================================
+  # Production Environment
+  # =============================================================================
+  hdc-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: hdc-toolkit-prod
+    volumes:
+      - prod-data:/home/hdcuser/data
+      - prod-models:/home/hdcuser/models
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - HDC_MEMORY_POOL_SIZE=1073741824
+      - HDC_ENABLE_MEMORY_POOL=true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          memory: 8G
+          cpus: '4'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import hd_compute; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # =============================================================================
+  # Documentation Server
+  # =============================================================================
+  hdc-docs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: docs
+    container_name: hdc-toolkit-docs
+    volumes:
+      - .:/home/hdcuser/hd-compute-toolkit
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # Benchmark Runner
+  # =============================================================================
+  hdc-benchmark:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: benchmark
+    container_name: hdc-toolkit-benchmark
+    volumes:
+      - benchmark-results:/home/hdcuser/benchmark-results
+      - ./benchmarks/config:/home/hdcuser/benchmark-config:ro
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - BENCHMARK_OUTPUT_DIR=/home/hdcuser/benchmark-results
+      - BENCHMARK_CONFIG_DIR=/home/hdcuser/benchmark-config
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          memory: 16G
+          cpus: '8'
+    profiles:
+      - benchmark
+
+  # =============================================================================
+  # FPGA Development Environment
+  # =============================================================================
+  hdc-fpga:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: fpga-dev
+    container_name: hdc-toolkit-fpga
+    volumes:
+      - .:/home/hdcuser/hd-compute-toolkit
+      - fpga-workspace:/home/hdcuser/fpga-workspace
+      - /opt/Xilinx:/opt/Xilinx:ro  # Mount Xilinx tools if available
+    devices:
+      - /dev/mem
+    privileged: true  # Required for FPGA access
+    environment:
+      - XILINX_VIVADO=/opt/Xilinx/Vivado/2023.1
+      - XILINX_VITIS=/opt/Xilinx/Vitis/2023.1
+    profiles:
+      - fpga
+
+  # =============================================================================
+  # Database for Experiment Tracking
+  # =============================================================================
+  postgres:
+    image: postgres:15
+    container_name: hdc-postgres
+    environment:
+      - POSTGRES_DB=hdc_experiments
+      - POSTGRES_USER=hdcuser
+      - POSTGRES_PASSWORD=hdcpass
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    profiles:
+      - database
+
+  # =============================================================================
+  # Redis for Caching
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: hdc-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    profiles:
+      - cache
+
+  # =============================================================================
+  # Monitoring with Prometheus
+  # =============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: hdc-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    profiles:
+      - monitoring
+
+  # =============================================================================
+  # Grafana for Visualization
+  # =============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: hdc-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=hdcadmin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    profiles:
+      - monitoring
+
+# =============================================================================
+# Named Volumes
+# =============================================================================
+volumes:
+  hdc-venv:
+    driver: local
+  jupyter-data:
+    driver: local
+  test-results:
+    driver: local
+  prod-data:
+    driver: local
+  prod-models:
+    driver: local
+  benchmark-results:
+    driver: local
+  fpga-workspace:
+    driver: local
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  default:
+    name: hdc-network
+    driver: bridge

@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'hdc-toolkit'
+    static_configs:
+      - targets: ['hdc-prod:9091']
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+
+  - job_name: 'nvidia-gpu'
+    static_configs:
+      - targets: ['localhost:9445']
+    scrape_interval: 5s
