@@ -1,0 +1,69 @@
+# Dependabot configuration for automated dependency updates
+# Enables security updates and version updates for Python dependencies
+
+version: 2
+updates:
+  # Python dependency updates
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "maintainers"
+    assignees:
+      - "maintainers"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "python"
+    
+    # Automatically merge minor and patch updates for trusted packages
+    allow:
+      - dependency-type: "direct"
+        update-type: "version-update:semver-patch"
+      - dependency-type: "direct"
+        update-type: "version-update:semver-minor"
+      - dependency-type: "indirect"
+        update-type: "version-update:semver-patch"
+    
+    # Group related dependencies
+    groups:
+      pytorch:
+        patterns:
+          - "torch*"
+      jax:
+        patterns:
+          - "jax*"
+      testing:
+        patterns:
+          - "pytest*"
+          - "*test*"
+      linting:
+        patterns:
+          - "black"
+          - "isort"
+          - "flake8"
+          - "mypy"
+      docs:
+        patterns:
+          - "sphinx*"
+          - "*doc*"
+
+  # GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "ci"
+      - "github-actions"

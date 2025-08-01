@@ -1,0 +1,95 @@
+# Main CI Workflow Template
+# Copy this to .github/workflows/ci.yml
+
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+        backend: ['torch', 'jax']
+        include:
+          - os: ubuntu-latest
+            python-version: '3.10'
+            backend: 'torch'
+            gpu: true
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        if [ "${{ matrix.backend }}" == "jax" ]; then
+          pip install "jax[cpu]" jaxlib
+        fi
+    
+    - name: Lint with flake8
+      run: |
+        flake8 hd_compute tests --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 hd_compute tests --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+    
+    - name: Check formatting with black
+      run: black --check hd_compute tests
+    
+    - name: Check imports with isort
+      run: isort --check-only hd_compute tests
+    
+    - name: Type check with mypy
+      run: mypy hd_compute
+    
+    - name: Test with pytest
+      run: |
+        pytest tests/ --cov=hd_compute --cov-report=xml --cov-report=term-missing
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: Run Bandit security linter
+      run: |
+        pip install bandit
+        bandit -r hd_compute/ -f json -o bandit-report.json
+    
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        path: ./
+        format: spdx-json
+        artifact-name: hd-compute-toolkit.spdx.json
