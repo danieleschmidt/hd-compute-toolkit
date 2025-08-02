@@ -1,6 +1,6 @@
 {
     "name": "HD-Compute-Toolkit Development",
-    "image": "mcr.microsoft.com/devcontainers/python:3.10-bullseye",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11-bullseye",
     
     "features": {
         "ghcr.io/devcontainers/features/nvidia-cuda:1": {
@@ -8,7 +8,8 @@
             "installToolkit": true
         },
         "ghcr.io/devcontainers/features/git:1": {},
-        "ghcr.io/devcontainers/features/github-cli:1": {}
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
     },
     
     "customizations": {

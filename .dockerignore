@@ -169,3 +169,7 @@ Pipfile*
 poetry.lock
 requirements-dev.txt
 requirements.txt
+
+# HD-Compute specific
+.hdc_cache/
+tmp_hypervectors/

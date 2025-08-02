@@ -205,3 +205,62 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# HD-Compute-Toolkit specific
+# ===========================
+
+# Data and model files
+data/
+models/
+checkpoints/
+experiments/
+wandb/
+mlruns/
+
+# Performance profiling
+profiling/
+*.prof
+*.pstats
+
+# Hardware-specific files
+*.bit
+*.bitstream
+*.spv
+
+# Large test files and datasets
+tests/data/large/
+benchmarks/results/
+benchmark_*.json
+
+# Temporary computation files
+.hdc_cache/
+tmp_hypervectors/
+
+# Jupyter notebook outputs (keep structure but ignore outputs)
+**/outputs/
+**/.ipynb_checkpoints/
+
+# IDE and development
+.vscode/settings.json
+.vscode/launch.json
+.vscode/*.code-workspace
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Container and deployment
+docker-compose.override.yml
+.docker/
+*.tar.gz
+
+# Security and secrets
+*.pem
+*.key
+secrets/
+.secrets

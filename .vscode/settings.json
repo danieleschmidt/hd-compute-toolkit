@@ -29,7 +29,12 @@
         ".mypy_cache": true,
         "*.egg-info": true,
         ".coverage": true,
-        "htmlcov": true
+        "htmlcov": true,
+        "**/.hdc_cache": true,
+        "**/profiling": true,
+        "**/data": true,
+        "**/models": true,
+        "**/checkpoints": true
     },
     "extensions.recommendations": [
         "ms-python.python",
@@ -40,6 +45,10 @@
         "github.copilot",
         "github.copilot-chat",
         "ms-vscode.test-adapter-converter",
-        "littlefoxteam.vscode-python-test-adapter"
+        "littlefoxteam.vscode-python-test-adapter",
+        "ms-toolsai.jupyter",
+        "eamodio.gitlens",
+        "redhat.vscode-yaml",
+        "tamasfe.even-better-toml"
     ]
 }
