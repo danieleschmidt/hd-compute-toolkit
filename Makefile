@@ -115,10 +115,29 @@ pre-commit: ## Run pre-commit hooks on all files
 
 # Container development
 docker-build: ## Build development Docker image
-	docker build -t hd-compute-toolkit:dev .
+	docker build --target development -t hd-compute-toolkit:dev .
+
+docker-build-prod: ## Build production Docker image
+	docker build --target production -t hd-compute-toolkit:latest .
+
+docker-build-gpu: ## Build GPU-enabled Docker image
+	docker build --target gpu -t hd-compute-toolkit:gpu .
 
 docker-run: ## Run development container
-	docker run -it --rm --gpus all -v $(PWD):/workspace hd-compute-toolkit:dev
+	docker run -it --rm --gpus all -v $(PWD):/app hd-compute-toolkit:dev
+
+docker-run-gpu: ## Run GPU development container
+	docker-compose up hdc-gpu
+
+docker-test: ## Run tests in container
+	docker-compose up hdc-test
+
+docker-benchmark: ## Run benchmarks in container
+	docker-compose up hdc-benchmark
+
+docker-clean: ## Clean Docker images and containers
+	docker system prune -f
+	docker volume prune -f
 
 # Terragon autonomous operations
 terragon-analyze: ## Analyze repository with Terragon value discovery

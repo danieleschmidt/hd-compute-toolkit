@@ -1,0 +1,269 @@
+# HD-Compute-Toolkit Docker Compose Configuration
+# Provides development and testing environments
+
+version: '3.8'
+
+services:
+  # ==============================================================================
+  # Development Environment
+  # ==============================================================================
+  hdc-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: hdc-toolkit-dev
+    volumes:
+      - .:/app
+      - hdc-data:/app/data
+      - hdc-models:/app/models
+      - hdc-logs:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8888:8888"  # Jupyter Lab
+      - "6006:6006"  # TensorBoard
+      - "8000:8000"  # API/Web interface
+    environment:
+      - HDC_ENV=development
+      - HDC_DEBUG=true
+      - HDC_DEFAULT_DEVICE=cpu
+      - PYTHONPATH=/app
+    working_dir: /app
+    command: |
+      bash -c "
+        echo 'Starting HD-Compute-Toolkit development environment...'
+        echo 'Available commands:'
+        echo '  make test       - Run test suite'
+        echo '  make lint       - Run code quality checks'
+        echo '  make docs       - Build documentation'
+        echo '  jupyter lab     - Start Jupyter Lab server'
+        echo ''
+        exec bash
+      "
+    networks:
+      - hdc-network
+
+  # ==============================================================================
+  # GPU Development Environment
+  # ==============================================================================
+  hdc-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: gpu
+    container_name: hdc-toolkit-gpu
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - HDC_ENV=development
+      - HDC_DEFAULT_DEVICE=cuda
+      - PYTHONPATH=/app
+    volumes:
+      - .:/app
+      - hdc-data:/app/data
+      - hdc-models:/app/models
+      - hdc-logs:/app/logs
+    ports:
+      - "8889:8888"  # Jupyter Lab (different port to avoid conflicts)
+      - "6007:6006"  # TensorBoard
+      - "8001:8000"  # API
+    working_dir: /app
+    command: |
+      bash -c "
+        echo 'Starting HD-Compute-Toolkit GPU development environment...'
+        echo 'GPU Status:'
+        nvidia-smi --query-gpu=name,memory.total,memory.free --format=csv
+        echo ''
+        echo 'PyTorch CUDA Status:'
+        python -c 'import torch; print(f\"CUDA available: {torch.cuda.is_available()}\"); print(f\"CUDA devices: {torch.cuda.device_count()}\")'
+        echo ''
+        exec bash
+      "
+    networks:
+      - hdc-network
+
+  # ==============================================================================
+  # Production Environment
+  # ==============================================================================
+  hdc-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: hdc-toolkit-prod
+    environment:
+      - HDC_ENV=production
+      - HDC_DEFAULT_DEVICE=cpu
+      - HDC_LOG_LEVEL=INFO
+    volumes:
+      - hdc-data:/app/data:ro
+      - hdc-models:/app/models:ro
+      - hdc-logs:/app/logs
+    ports:
+      - "8002:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import hd_compute; print('healthy')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - hdc-network
+
+  # ==============================================================================
+  # Testing Environment
+  # ==============================================================================
+  hdc-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: hdc-toolkit-test
+    environment:
+      - HDC_ENV=testing
+      - HDC_DEBUG=false
+      - PYTHONPATH=/app
+    volumes:
+      - .:/app
+      - hdc-test-results:/app/test-results
+    working_dir: /app
+    command: |
+      bash -c "
+        echo 'Running HD-Compute-Toolkit test suite...'
+        python -m pytest tests/ -v --tb=short --cov=hd_compute --cov-report=html:test-results/coverage
+        echo 'Tests completed. Results available in test-results/'
+      "
+    networks:
+      - hdc-network
+
+  # ==============================================================================
+  # Documentation Server
+  # ==============================================================================
+  hdc-docs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: hdc-toolkit-docs
+    volumes:
+      - .:/app
+      - hdc-docs-build:/app/docs/_build
+    ports:
+      - "8080:8080"
+    working_dir: /app
+    command: |
+      bash -c "
+        echo 'Building and serving HD-Compute-Toolkit documentation...'
+        pip install sphinx sphinx-rtd-theme myst-parser
+        cd docs && make html && cd ..
+        python -m http.server 8080 --directory docs/_build/html
+      "
+    networks:
+      - hdc-network
+
+  # ==============================================================================
+  # Benchmark Runner
+  # ==============================================================================
+  hdc-benchmark:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: hdc-toolkit-benchmark
+    environment:
+      - HDC_ENV=benchmark
+      - HDC_BENCHMARK_MODE=true
+    volumes:
+      - .:/app
+      - hdc-benchmark-results:/app/benchmark-results
+    working_dir: /app
+    command: |
+      bash -c "
+        echo 'Running HD-Compute-Toolkit benchmarks...'
+        mkdir -p benchmark-results
+        python -m pytest tests/performance/ -v --benchmark-only --benchmark-save=benchmark-results/latest
+        echo 'Benchmarks completed. Results saved to benchmark-results/'
+      "
+    networks:
+      - hdc-network
+
+  # ==============================================================================
+  # Database (for storing experiment results, if needed)
+  # ==============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: hdc-postgres
+    environment:
+      - POSTGRES_DB=hdc_experiments
+      - POSTGRES_USER=hdc_user
+      - POSTGRES_PASSWORD=hdc_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - hdc-network
+
+  # ==============================================================================
+  # Redis (for caching and job queues, if needed)
+  # ==============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: hdc-redis
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - hdc-network
+
+  # ==============================================================================
+  # MLflow Tracking Server
+  # ==============================================================================
+  mlflow:
+    image: python:3.11-slim
+    container_name: hdc-mlflow
+    command: |
+      bash -c "
+        pip install mlflow psycopg2-binary
+        mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri postgresql://hdc_user:hdc_password@postgres:5432/hdc_experiments --default-artifact-root /app/mlruns
+      "
+    ports:
+      - "5000:5000"
+    volumes:
+      - hdc-mlruns:/app/mlruns
+    depends_on:
+      - postgres
+    networks:
+      - hdc-network
+
+# ==============================================================================
+# Networks
+# ==============================================================================
+networks:
+  hdc-network:
+    driver: bridge
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  hdc-data:
+    driver: local
+  hdc-models:
+    driver: local
+  hdc-logs:
+    driver: local
+  hdc-test-results:
+    driver: local
+  hdc-docs-build:
+    driver: local
+  hdc-benchmark-results:
+    driver: local
+  hdc-mlruns:
+    driver: local
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
