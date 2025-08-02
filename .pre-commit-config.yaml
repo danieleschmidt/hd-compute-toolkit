@@ -35,3 +35,23 @@ repos:
       - id: mypy
         additional_dependencies: [types-all]
         args: ["--ignore-missing-imports"]
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: ["-r", "hd_compute/", "-f", "json", "-o", "bandit-report.json"]
+        exclude: tests/
+
+  - repo: https://github.com/gitguardian/ggshield
+    rev: v1.21.0
+    hooks:
+      - id: ggshield
+        language: python
+        stages: [commit]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
