@@ -9,14 +9,24 @@ import numpy as np
 import pytest
 import torch
 
-# Import main modules (will need to be updated as modules are implemented)
+# Import main modules
 try:
-    from hd_compute import HDCompute
-    from hd_compute.core.hdc import HDCBackend
+    from hd_compute import HDCompute, HDComputeTorch, HDComputeJAX, CacheManager, DatabaseConnection
+    from hd_compute.core.hdc import HDCompute as HDComputeBase
+    from hd_compute.memory import ItemMemory, AssociativeMemory
+    from hd_compute.applications import SpeechCommandHDC, SemanticMemory
 except ImportError:
     # Fallback for when modules are not yet implemented
     HDCompute = None
-    HDCBackend = None
+    HDComputeTorch = None
+    HDComputeJAX = None
+    HDComputeBase = None
+    CacheManager = None
+    DatabaseConnection = None
+    ItemMemory = None
+    AssociativeMemory = None
+    SpeechCommandHDC = None
+    SemanticMemory = None
 
 
 def pytest_configure(config):
@@ -259,6 +269,78 @@ class MockHDCBackend:
 def mock_hdc_backend(medium_dimension: int, device: str, set_random_seeds) -> MockHDCBackend:
     """Create a mock HDC backend for testing."""
     return MockHDCBackend(dim=medium_dimension, device=device, seed=42)
+
+
+@pytest.fixture
+def pytorch_backend(medium_dimension: int, device: str, set_random_seeds):
+    """Create PyTorch HDC backend for testing."""
+    if HDComputeTorch is None:
+        pytest.skip("HDComputeTorch not available")
+    return HDComputeTorch(dim=medium_dimension, device=device)
+
+
+@pytest.fixture
+def jax_backend(medium_dimension: int, set_random_seeds):
+    """Create JAX HDC backend for testing."""
+    if HDComputeJAX is None:
+        pytest.skip("HDComputeJAX not available")
+    try:
+        import jax.random as random
+        return HDComputeJAX(dim=medium_dimension, key=random.PRNGKey(42))
+    except ImportError:
+        pytest.skip("JAX not available")
+
+
+@pytest.fixture
+def test_database(temp_dir: Path):
+    """Create a test database instance."""
+    if DatabaseConnection is None:
+        pytest.skip("DatabaseConnection not available")
+    
+    db_path = temp_dir / "test.db"
+    return DatabaseConnection(str(db_path))
+
+
+@pytest.fixture
+def test_cache_manager(temp_dir: Path):
+    """Create a test cache manager instance."""
+    if CacheManager is None:
+        pytest.skip("CacheManager not available")
+    
+    cache_dir = temp_dir / "cache"
+    return CacheManager(cache_dir=str(cache_dir), max_size_mb=10)
+
+
+@pytest.fixture
+def item_memory(pytorch_backend):
+    """Create ItemMemory instance for testing."""
+    if ItemMemory is None or pytorch_backend is None:
+        pytest.skip("ItemMemory or backend not available")
+    return ItemMemory(pytorch_backend)
+
+
+@pytest.fixture
+def associative_memory(pytorch_backend):
+    """Create AssociativeMemory instance for testing."""
+    if AssociativeMemory is None or pytorch_backend is None:
+        pytest.skip("AssociativeMemory or backend not available")
+    return AssociativeMemory(pytorch_backend, capacity=100)
+
+
+@pytest.fixture 
+def speech_command_hdc(pytorch_backend):
+    """Create SpeechCommandHDC instance for testing."""
+    if SpeechCommandHDC is None or pytorch_backend is None:
+        pytest.skip("SpeechCommandHDC or backend not available")
+    return SpeechCommandHDC(pytorch_backend, dim=1000, num_classes=10)
+
+
+@pytest.fixture
+def semantic_memory(pytorch_backend):
+    """Create SemanticMemory instance for testing."""
+    if SemanticMemory is None or pytorch_backend is None:
+        pytest.skip("SemanticMemory or backend not available")
+    return SemanticMemory(pytorch_backend, dim=1000)
 
 
 # Helper functions for test assertions
