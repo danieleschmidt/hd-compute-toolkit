@@ -1,0 +1,53 @@
+# HD-Compute-Toolkit Code Owners
+# This file defines who should review specific parts of the codebase
+
+# Global owners (default reviewers for everything)
+* @danieleschmidt
+
+# Core HDC implementation
+/hd_compute/core/ @danieleschmidt
+/hd_compute/torch/ @danieleschmidt 
+/hd_compute/jax/ @danieleschmidt
+
+# Hardware acceleration kernels
+/hd_compute/kernels/ @danieleschmidt
+/hd_compute/kernels/fpga/ @danieleschmidt
+/hd_compute/kernels/vulkan/ @danieleschmidt
+
+# Testing infrastructure
+/tests/ @danieleschmidt
+/tests/performance/ @danieleschmidt
+/tests/hardware/ @danieleschmidt
+
+# Documentation
+/docs/ @danieleschmidt
+*.md @danieleschmidt
+
+# Build and deployment
+/Dockerfile @danieleschmidt
+/docker-compose.yml @danieleschmidt
+/Makefile @danieleschmidt
+/pyproject.toml @danieleschmidt
+
+# CI/CD workflows (when created manually)
+/.github/workflows/ @danieleschmidt
+
+# Configuration files
+/.devcontainer/ @danieleschmidt
+/.vscode/ @danieleschmidt
+/.pre-commit-config.yaml @danieleschmidt
+
+# Scripts and automation
+/scripts/ @danieleschmidt
+
+# Security-sensitive files
+/SECURITY.md @danieleschmidt
+/.github/project-metrics.json @danieleschmidt
+
+# Examples and applications
+/examples/ @danieleschmidt
+/hd_compute/applications/ @danieleschmidt
+
+# Research and benchmarks
+/benchmarks/ @danieleschmidt
+/hd_compute/benchmarks/ @danieleschmidt
