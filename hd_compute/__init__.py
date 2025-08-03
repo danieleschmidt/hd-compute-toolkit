@@ -14,6 +14,8 @@ from .torch import HDComputeTorch
 from .jax import HDComputeJAX
 from .memory import ItemMemory, AssociativeMemory
 from .applications import SpeechCommandHDC, SemanticMemory
+from .database import DatabaseConnection, ExperimentRepository, MetricsRepository, BenchmarkRepository
+from .cache import CacheManager, HypervectorCache
 
 __all__ = [
     "HDCompute", 
@@ -22,5 +24,11 @@ __all__ = [
     "ItemMemory", 
     "AssociativeMemory",
     "SpeechCommandHDC",
-    "SemanticMemory"
+    "SemanticMemory",
+    "DatabaseConnection",
+    "ExperimentRepository",
+    "MetricsRepository", 
+    "BenchmarkRepository",
+    "CacheManager",
+    "HypervectorCache"
 ]
