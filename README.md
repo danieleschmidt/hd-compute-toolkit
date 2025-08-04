@@ -200,9 +200,9 @@ If you use HD-Compute-Toolkit in your research, please cite:
 ```bibtex
 @software{hd_compute_toolkit,
   title={HD-Compute-Toolkit: High-Performance Hyperdimensional Computing for PyTorch and JAX},
-  author={Your Name},
+  author={Daniel Schmidt},
   year={2025},
-  url={https://github.com/yourusername/hd-compute-toolkit}
+  url={https://github.com/danieleschmidt/hd-compute-toolkit}
 }
 ```
 
