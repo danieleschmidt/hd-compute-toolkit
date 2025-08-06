@@ -1,0 +1,423 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hdc-quantum-planner-config
+  namespace: hdc-production
+data:
+  # Quantum Task Planner Configuration
+  QUANTUM_DIMENSION: "10000"
+  QUANTUM_COHERENCE_THRESHOLD: "0.7"
+  MAX_SUPERPOSITION_STATES: "100"
+  ENABLE_DISTRIBUTED_PLANNING: "true"
+  AUTO_SCALING_ENABLED: "true"
+  
+  # Cluster Configuration
+  MIN_NODES: "3"
+  MAX_NODES: "50"
+  SCALE_UP_THRESHOLD: "0.8"
+  SCALE_DOWN_THRESHOLD: "0.3"
+  HEARTBEAT_INTERVAL: "30"
+  HEALTH_CHECK_TIMEOUT: "10"
+  REPLICATION_FACTOR: "3"
+  
+  # Security Configuration
+  ENABLE_QUANTUM_ENCRYPTION: "true"
+  REQUIRE_APPROVAL_FOR_SENSITIVE_TASKS: "true"
+  AUDIT_ALL_OPERATIONS: "true"
+  SESSION_TIMEOUT_HOURS: "8"
+  MAX_CONCURRENT_EXECUTIONS: "20"
+  
+  # Performance Configuration
+  CACHE_SIZE_MB: "2048"
+  OPTIMIZATION_STRATEGY: "hybrid_quantum"
+  ENABLE_GPU_ACCELERATION: "true"
+  PERFORMANCE_MONITORING: "true"
+  
+  # Global Configuration
+  TIMEZONE: "UTC"
+  LOG_LEVEL: "INFO"
+  METRICS_RETENTION_DAYS: "30"
+  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quantum-task-planner-coordinator
+  namespace: hdc-production
+  labels:
+    app: quantum-task-planner
+    component: coordinator
+    version: v1.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: quantum-task-planner
+      component: coordinator
+  template:
+    metadata:
+      labels:
+        app: quantum-task-planner
+        component: coordinator
+    spec:
+      serviceAccountName: quantum-planner-sa
+      containers:
+      - name: coordinator
+        image: hdc-toolkit/quantum-planner:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: api
+        - containerPort: 8081
+          name: cluster
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: NODE_ROLE
+          value: "coordinator"
+        - name: CLUSTER_SIZE
+          value: "3"
+        envFrom:
+        - configMapRef:
+            name: hdc-quantum-planner-config
+        resources:
+          requests:
+            cpu: "2000m"
+            memory: "4Gi"
+          limits:
+            cpu: "4000m"
+            memory: "8Gi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: cache-volume
+          mountPath: /app/cache
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: hdc-quantum-planner-config
+      - name: cache-volume
+        emptyDir:
+          sizeLimit: 2Gi
+      - name: logs-volume
+        emptyDir:
+          sizeLimit: 1Gi
+      nodeSelector:
+        node-type: compute-optimized
+      tolerations:
+      - key: "quantum-planning"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quantum-task-planner-workers
+  namespace: hdc-production
+  labels:
+    app: quantum-task-planner
+    component: worker
+    version: v1.0.0
+spec:
+  replicas: 6
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 2
+      maxSurge: 2
+  selector:
+    matchLabels:
+      app: quantum-task-planner
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: quantum-task-planner
+        component: worker
+    spec:
+      serviceAccountName: quantum-planner-sa
+      containers:
+      - name: worker
+        image: hdc-toolkit/quantum-planner:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: api
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: NODE_ROLE
+          value: "worker"
+        - name: COORDINATOR_ENDPOINT
+          value: "quantum-task-planner-coordinator-service:8081"
+        envFrom:
+        - configMapRef:
+            name: hdc-quantum-planner-config
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "2Gi"
+            nvidia.com/gpu: "0"
+          limits:
+            cpu: "2000m"
+            memory: "4Gi"
+            nvidia.com/gpu: "1"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: cache-volume
+          mountPath: /app/cache
+        - name: tmp-volume
+          mountPath: /tmp
+      volumes:
+      - name: cache-volume
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: 500Mi
+      nodeSelector:
+        accelerator: nvidia-gpu
+      tolerations:
+      - key: "gpu"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quantum-task-planner-coordinator-service
+  namespace: hdc-production
+  labels:
+    app: quantum-task-planner
+    component: coordinator
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: api
+  - port: 8081
+    targetPort: 8081
+    name: cluster
+  selector:
+    app: quantum-task-planner
+    component: coordinator
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quantum-task-planner-api-service
+  namespace: hdc-production
+  labels:
+    app: quantum-task-planner
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    name: http
+  - port: 443
+    targetPort: 8080
+    name: https
+  selector:
+    app: quantum-task-planner
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: quantum-task-planner-hpa
+  namespace: hdc-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: quantum-task-planner-workers
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Pods
+    pods:
+      metric:
+        name: quantum_coherence_average
+      target:
+        type: AverageValue
+        averageValue: "0.7"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: quantum-planner-sa
+  namespace: hdc-production
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: quantum-planner-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: quantum-planner-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: quantum-planner-role
+subjects:
+- kind: ServiceAccount
+  name: quantum-planner-sa
+  namespace: hdc-production
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: quantum-planner-network-policy
+  namespace: hdc-production
+spec:
+  podSelector:
+    matchLabels:
+      app: quantum-task-planner
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: quantum-task-planner
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8081
+    - protocol: TCP
+      port: 9090
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: quantum-task-planner
+    - namespaceSelector:
+        matchLabels:
+          name: default
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8081
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: quantum-planner-cache-pvc
+  namespace: hdc-production
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: quantum-task-planner-metrics
+  namespace: hdc-production
+  labels:
+    app: quantum-task-planner
+spec:
+  selector:
+    matchLabels:
+      app: quantum-task-planner
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
