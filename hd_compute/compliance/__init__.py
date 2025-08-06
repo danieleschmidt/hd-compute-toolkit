@@ -1,7 +1,7 @@
 """Compliance and data privacy utilities."""
 
-from .gdpr import GDPRCompliance
+from .gdpr import GDPRComplianceChecker
 from .data_privacy import DataPrivacyManager
-from .audit_compliance import ComplianceAuditor
+from .audit_compliance import AuditComplianceManager
 
-__all__ = ["GDPRCompliance", "DataPrivacyManager", "ComplianceAuditor"]
+__all__ = ["GDPRComplianceChecker", "DataPrivacyManager", "AuditComplianceManager"]

@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hdc-toolkit-data-pvc
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: hd-compute-toolkit
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: fast-ssd  # Adjust based on your cluster's storage classes
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hdc-toolkit-logs-pvc
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: hd-compute-toolkit
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hdc-toolkit-models-pvc
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: hd-compute-toolkit
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: fast-ssd
+
+---
+# PostgreSQL data storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data-pvc
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: ssd
+
+---
+# Redis data storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data-pvc
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: cache
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard

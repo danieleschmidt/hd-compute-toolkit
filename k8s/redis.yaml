@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: cache
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+      app.kubernetes.io/component: cache
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: redis
+        app.kubernetes.io/component: cache
+    spec:
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 6379
+        command:
+        - redis-server
+        - /etc/redis/redis.conf
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        - name: redis-config
+          mountPath: /etc/redis
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-data-pvc
+      - name: redis-config
+        configMap:
+          name: redis-config
+          defaultMode: 0644
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: cache
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+  selector:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: cache
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: cache
+data:
+  redis.conf: |
+    # Redis configuration for production use
+    bind 0.0.0.0
+    port 6379
+    timeout 300
+    tcp-keepalive 60
+    
+    # Memory management
+    maxmemory 256mb
+    maxmemory-policy allkeys-lru
+    
+    # Persistence
+    save 900 1
+    save 300 10
+    save 60 10000
+    
+    # Security
+    protected-mode yes
+    
+    # Logging
+    loglevel notice
+    
+    # Performance
+    tcp-backlog 511
+    databases 16

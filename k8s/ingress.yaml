@@ -1,0 +1,97 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hdc-toolkit-ingress
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: ingress
+  annotations:
+    # NGINX Ingress Controller annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # Rate limiting
+    nginx.ingress.kubernetes.io/rate-limit-connections: "10"
+    nginx.ingress.kubernetes.io/rate-limit-rps: "100"
+    
+    # Request size limits
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    
+    # Timeouts
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';" always;
+    
+    # Health checks
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$remote_addr"
+    
+    # TLS/SSL settings
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - hdc-toolkit.example.com
+    secretName: hdc-toolkit-tls
+  rules:
+  - host: hdc-toolkit.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hdc-toolkit-service
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: hdc-toolkit-service
+            port:
+              number: 80
+      - path: /metrics
+        pathType: Prefix
+        backend:
+          service:
+            name: hdc-toolkit-service
+            port:
+              number: 9090
+
+---
+# Internal ingress for cluster-only access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hdc-toolkit-internal-ingress
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: internal-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: hdc-toolkit-internal.cluster.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hdc-toolkit-service
+            port:
+              number: 80

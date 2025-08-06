@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hdc-toolkit-app
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: application
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hd-compute-toolkit
+      app.kubernetes.io/component: application
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hd-compute-toolkit
+        app.kubernetes.io/component: application
+        app.kubernetes.io/version: "1.0.0"
+      annotations:
+        # Force pod restart on config changes
+        configmap.reloader.stakater.com/reload: "hdc-toolkit-config"
+        secret.reloader.stakater.com/reload: "hdc-toolkit-secrets"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: hdc-toolkit
+        image: hd-compute-toolkit:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        
+        # Environment variables from ConfigMap and Secret
+        envFrom:
+        - configMapRef:
+            name: hdc-toolkit-config
+        - secretRef:
+            name: hdc-toolkit-secrets
+        
+        # Resource limits and requests
+        resources:
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+        
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Startup probe for slow-starting containers
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 10
+        
+        # Volume mounts
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+        - name: models-volume
+          mountPath: /app/models
+        - name: tmp-volume
+          mountPath: /tmp
+        
+        # Security context
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        
+        # Lifecycle hooks
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - "sleep 15"  # Grace period for connection draining
+      
+      # Volumes
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: hdc-toolkit-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: hdc-toolkit-logs-pvc
+      - name: models-volume
+        persistentVolumeClaim:
+          claimName: hdc-toolkit-models-pvc
+      - name: tmp-volume
+        emptyDir: {}
+      
+      # Pod disruption settings
+      terminationGracePeriodSeconds: 30
+      
+      # Node affinity for better performance
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - hd-compute-toolkit
+              topologyKey: kubernetes.io/hostname

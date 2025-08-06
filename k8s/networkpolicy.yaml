@@ -1,0 +1,170 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hdc-toolkit-network-policy
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: hd-compute-toolkit
+      app.kubernetes.io/component: application
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow ingress from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8000
+  # Allow ingress from monitoring namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+  # Allow ingress from same namespace (internal services)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: hd-compute-toolkit
+    ports:
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 9090
+  egress:
+  # Allow egress to PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow egress to Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Allow egress to DNS (kube-system)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow egress to external services (HTTPS)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow egress to external services (HTTP) - only if needed
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 80
+
+---
+# Network policy for PostgreSQL
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-network-policy
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+      app.kubernetes.io/component: database
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Only allow connections from HD Compute Toolkit app
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: hd-compute-toolkit
+          app.kubernetes.io/component: application
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow connections from monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 5432
+  egress:
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+
+---
+# Network policy for Redis
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-network-policy
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+      app.kubernetes.io/component: cache
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Only allow connections from HD Compute Toolkit app
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: hd-compute-toolkit
+          app.kubernetes.io/component: application
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Allow connections from monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress:
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
