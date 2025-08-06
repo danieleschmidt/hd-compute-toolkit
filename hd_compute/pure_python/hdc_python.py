@@ -335,3 +335,169 @@ class HDComputePython(HDCompute):
         item_to_index = {item: i for i, item in enumerate(items)}
         
         return memory, item_to_index
+    
+    # Advanced similarity metrics
+    
+    def jensen_shannon_divergence(self, hv1: SimpleArray, hv2: SimpleArray) -> float:
+        """Jensen-Shannon divergence for probabilistic hypervectors."""
+        # Convert to probability distributions
+        sum1 = sum(abs(x) for x in hv1.data) + 1e-8
+        sum2 = sum(abs(x) for x in hv2.data) + 1e-8
+        p1 = [abs(x) / sum1 for x in hv1.data]
+        p2 = [abs(x) / sum2 for x in hv2.data]
+        
+        # Compute average distribution
+        m = [(a + b) * 0.5 for a, b in zip(p1, p2)]
+        
+        # Compute KL divergences
+        kl_p1m = sum(p * math.log((p + 1e-8) / (m_val + 1e-8)) 
+                    for p, m_val in zip(p1, m) if p > 1e-8)
+        kl_p2m = sum(p * math.log((p + 1e-8) / (m_val + 1e-8)) 
+                    for p, m_val in zip(p2, m) if p > 1e-8)
+        
+        # Jensen-Shannon divergence
+        return 0.5 * (kl_p1m + kl_p2m)
+    
+    def wasserstein_distance(self, hv1: SimpleArray, hv2: SimpleArray) -> float:
+        """Wasserstein distance for geometric hypervector comparison."""
+        # Simplified 1D Wasserstein distance using sorted values
+        sorted_hv1 = sorted(hv1.data)
+        sorted_hv2 = sorted(hv2.data)
+        return sum(abs(a - b) for a, b in zip(sorted_hv1, sorted_hv2)) / len(sorted_hv1)
+    
+    # Novel research operations
+    
+    def fractional_bind(self, hv1: SimpleArray, hv2: SimpleArray, power: float = 0.5) -> SimpleArray:
+        """Fractional binding operation for gradual associations."""
+        # Linear interpolation based binding
+        bound_data = []
+        for a, b in zip(hv1.data, hv2.data):
+            # XOR operation with fractional strength
+            xor_val = 1.0 if (a > 0.5) != (b > 0.5) else 0.0
+            fractional_bound = power * xor_val + (1 - power) * a
+            bound_data.append(fractional_bound)
+        
+        # Binarize with adaptive threshold
+        threshold = sum(bound_data) / len(bound_data)
+        result_data = [1.0 if x > threshold else 0.0 for x in bound_data]
+        return SimpleArray(result_data, (self.dim,))
+    
+    def quantum_superposition(self, hvs: List[SimpleArray], amplitudes: Optional[List[float]] = None) -> SimpleArray:
+        """Quantum-inspired superposition with probability amplitudes."""
+        if not hvs:
+            raise ValueError("Cannot create superposition from empty list")
+        
+        if amplitudes is None:
+            amplitudes = [1.0 / len(hvs)] * len(hvs)
+        
+        # Normalize amplitudes
+        amp_sum = sum(amplitudes)
+        amplitudes = [amp / amp_sum for amp in amplitudes]
+        
+        # Weighted superposition
+        result_data = [0.0] * self.dim
+        for hv, amp in zip(hvs, amplitudes):
+            for i, val in enumerate(hv.data):
+                result_data[i] += amp * val
+        
+        # Probabilistic binarization based on amplitudes
+        max_val = max(abs(x) for x in result_data) + 1e-8
+        probabilities = [abs(x) / max_val for x in result_data]
+        
+        binary_data = []
+        for prob in probabilities:
+            binary_data.append(1.0 if self._rng.random() < prob else 0.0)
+        
+        return SimpleArray(binary_data, (self.dim,))
+    
+    def entanglement_measure(self, hv1: SimpleArray, hv2: SimpleArray) -> float:
+        """Measure quantum-like entanglement between hypervectors."""
+        # Simplified entanglement using correlation
+        mean1 = sum(hv1.data) / len(hv1.data)
+        mean2 = sum(hv2.data) / len(hv2.data)
+        
+        # Compute covariance
+        cov = sum((a - mean1) * (b - mean2) for a, b in zip(hv1.data, hv2.data)) / len(hv1.data)
+        
+        # Compute standard deviations
+        std1 = math.sqrt(sum((a - mean1) ** 2 for a in hv1.data) / len(hv1.data))
+        std2 = math.sqrt(sum((b - mean2) ** 2 for b in hv2.data) / len(hv2.data))
+        
+        # Correlation coefficient as entanglement proxy
+        if std1 > 1e-8 and std2 > 1e-8:
+            correlation = abs(cov / (std1 * std2))
+            return min(1.0, correlation)
+        else:
+            return 0.0
+    
+    def coherence_decay(self, hv: SimpleArray, decay_rate: float = 0.1) -> SimpleArray:
+        """Apply coherence decay to simulate memory degradation."""
+        decayed_data = []
+        for val in hv.data:
+            # Add noise proportional to decay rate
+            noise = (self._rng.random() - 0.5) * decay_rate
+            decayed_val = val + noise
+            
+            # Probabilistic binarization with decay
+            prob = abs(decayed_val) * (1 - decay_rate)
+            prob = min(1.0, max(0.0, prob))
+            decayed_data.append(1.0 if self._rng.random() < prob else 0.0)
+        
+        return SimpleArray(decayed_data, (self.dim,))
+    
+    def adaptive_threshold(self, hv: SimpleArray, target_sparsity: float = 0.5) -> SimpleArray:
+        """Adaptive thresholding to maintain target sparsity."""
+        # Sort values to find threshold
+        sorted_vals = sorted(hv.data)
+        threshold_idx = int((1 - target_sparsity) * len(sorted_vals))
+        threshold = sorted_vals[threshold_idx] if threshold_idx < len(sorted_vals) else sorted_vals[-1]
+        
+        result_data = [1.0 if val >= threshold else 0.0 for val in hv.data]
+        return SimpleArray(result_data, (self.dim,))
+    
+    # Hierarchical and compositional operations
+    
+    def hierarchical_bind(self, structure: dict) -> SimpleArray:
+        """Hierarchical binding for complex compositional structures."""
+        def _bind_structure(struct):
+            if isinstance(struct, SimpleArray):
+                return struct
+            elif isinstance(struct, dict):
+                if not struct:
+                    return self.random_hv()
+                
+                bound_items = []
+                for key, value in struct.items():
+                    key_hv = self.random_hv()  # Should use item memory in practice
+                    value_hv = _bind_structure(value)
+                    bound_pair = self.bind(key_hv, value_hv)
+                    bound_items.append(bound_pair)
+                
+                return self.bundle(bound_items)
+            elif isinstance(struct, list):
+                if not struct:
+                    return self.random_hv()
+                
+                bound_items = [_bind_structure(item) for item in struct]
+                return self.bundle(bound_items)
+            else:
+                # Convert scalar to hypervector
+                return self.random_hv()
+        
+        return _bind_structure(structure)
+    
+    def semantic_projection(self, hv: SimpleArray, basis_hvs: List[SimpleArray]) -> List[float]:
+        """Project hypervector onto semantic basis."""
+        if not basis_hvs:
+            return []
+        
+        # Compute similarities with each basis vector
+        similarities = [self.cosine_similarity(hv, basis_hv) for basis_hv in basis_hvs]
+        
+        # Normalize to get projection coefficients
+        norm = math.sqrt(sum(sim * sim for sim in similarities))
+        
+        if norm > 1e-8:
+            return [sim / norm for sim in similarities]
+        else:
+            return [0.0] * len(basis_hvs)
