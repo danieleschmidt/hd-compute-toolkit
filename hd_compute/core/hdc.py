@@ -2,7 +2,14 @@
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Union
-import numpy as np
+
+# Optional numpy import for statistical analysis
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+    np = None
 
 
 class HDCompute(ABC):
@@ -206,13 +213,27 @@ class HDCompute(ABC):
             random_hv = self.random_hv()
             random_similarities.append(self.cosine_similarity(hv1, random_hv))
         
-        random_similarities = np.array(random_similarities)
-        
-        return {
-            'cosine_similarity': float(actual_sim),
-            'random_baseline_mean': float(np.mean(random_similarities)),
-            'random_baseline_std': float(np.std(random_similarities)),
-            'z_score': float((actual_sim - np.mean(random_similarities)) / np.std(random_similarities)),
-            'percentile': float(np.mean(random_similarities < actual_sim) * 100),
-            'significance': float(actual_sim > np.mean(random_similarities) + 2 * np.std(random_similarities))
-        }
+        if NUMPY_AVAILABLE:
+            random_similarities = np.array(random_similarities)
+            
+            return {
+                'cosine_similarity': float(actual_sim),
+                'random_baseline_mean': float(np.mean(random_similarities)),
+                'random_baseline_std': float(np.std(random_similarities)),
+                'z_score': float((actual_sim - np.mean(random_similarities)) / np.std(random_similarities)),
+                'percentile': float(np.mean(random_similarities < actual_sim) * 100),
+                'significance': float(actual_sim > np.mean(random_similarities) + 2 * np.std(random_similarities))
+            }
+        else:
+            # Fallback without numpy
+            mean_sim = sum(random_similarities) / len(random_similarities)
+            std_sim = (sum((x - mean_sim) ** 2 for x in random_similarities) / len(random_similarities)) ** 0.5
+            
+            return {
+                'cosine_similarity': float(actual_sim),
+                'random_baseline_mean': float(mean_sim),
+                'random_baseline_std': float(std_sim),
+                'z_score': float((actual_sim - mean_sim) / std_sim) if std_sim > 0 else 0.0,
+                'percentile': float(sum(1 for x in random_similarities if x < actual_sim) / len(random_similarities) * 100),
+                'significance': float(actual_sim > mean_sim + 2 * std_sim)
+            }

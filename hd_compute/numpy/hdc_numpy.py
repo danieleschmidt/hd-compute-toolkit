@@ -188,3 +188,164 @@ class HDComputeNumPy(HDCompute):
         item_to_index = {item: i for i, item in enumerate(items)}
         
         return memory, item_to_index
+    
+    # Advanced similarity metrics
+    
+    def jensen_shannon_divergence(self, hv1: np.ndarray, hv2: np.ndarray) -> float:
+        """Jensen-Shannon divergence for probabilistic hypervectors."""
+        # Convert to probability distributions
+        p1 = np.abs(hv1) / (np.sum(np.abs(hv1)) + 1e-8)
+        p2 = np.abs(hv2) / (np.sum(np.abs(hv2)) + 1e-8)
+        
+        # Compute average distribution
+        m = 0.5 * (p1 + p2)
+        
+        # Compute KL divergences
+        kl_p1m = np.sum(p1 * np.log((p1 + 1e-8) / (m + 1e-8)))
+        kl_p2m = np.sum(p2 * np.log((p2 + 1e-8) / (m + 1e-8)))
+        
+        # Jensen-Shannon divergence
+        return float(0.5 * (kl_p1m + kl_p2m))
+    
+    def wasserstein_distance(self, hv1: np.ndarray, hv2: np.ndarray) -> float:
+        """Wasserstein distance for geometric hypervector comparison."""
+        # Simplified 1D Wasserstein distance using sorted values
+        sorted_hv1 = np.sort(hv1.flatten())
+        sorted_hv2 = np.sort(hv2.flatten())
+        return float(np.mean(np.abs(sorted_hv1 - sorted_hv2)))
+    
+    # Novel research operations
+    
+    def fractional_bind(self, hv1: np.ndarray, hv2: np.ndarray, power: float = 0.5) -> np.ndarray:
+        """Fractional binding operation for gradual associations."""
+        # Convert to float for fractional operations
+        hv1_float = hv1.astype(np.float32)
+        hv2_float = hv2.astype(np.float32)
+        
+        # Linear interpolation based binding
+        bound = power * np.logical_xor(hv1.astype(bool), hv2.astype(bool)).astype(np.float32)
+        unbound = (1 - power) * hv1_float
+        
+        result = bound + unbound
+        # Binarize with adaptive threshold
+        threshold = np.mean(result)
+        return (result > threshold).astype(self.dtype)
+    
+    def quantum_superposition(self, hvs: List[np.ndarray], amplitudes: Optional[List[float]] = None) -> np.ndarray:
+        """Quantum-inspired superposition with probability amplitudes."""
+        if not hvs:
+            raise ValueError("Cannot create superposition from empty list")
+        
+        if amplitudes is None:
+            amplitudes = [1.0 / len(hvs)] * len(hvs)
+        
+        # Normalize amplitudes
+        amplitudes = np.array(amplitudes)
+        amplitudes = amplitudes / np.sum(amplitudes)
+        
+        # Weighted superposition
+        result = np.zeros(self.dim, dtype=np.float32)
+        for hv, amp in zip(hvs, amplitudes):
+            result += amp * hv.astype(np.float32)
+        
+        # Probabilistic binarization based on amplitudes
+        probabilities = np.abs(result)
+        probabilities = probabilities / (np.max(probabilities) + 1e-8)
+        random_vals = self._rng.rand(self.dim)
+        
+        return (random_vals < probabilities).astype(self.dtype)
+    
+    def entanglement_measure(self, hv1: np.ndarray, hv2: np.ndarray) -> float:
+        """Measure quantum-like entanglement between hypervectors."""
+        # Convert to probability distributions
+        p1 = np.abs(hv1.astype(np.float32)) / (np.sum(np.abs(hv1)) + 1e-8)
+        p2 = np.abs(hv2.astype(np.float32)) / (np.sum(np.abs(hv2)) + 1e-8)
+        
+        # Compute joint probability (outer product)
+        joint_prob = np.outer(p1, p2).flatten()
+        marginal_prob = np.outer(np.ones_like(p1), np.ones_like(p2)).flatten()
+        marginal_prob = marginal_prob / np.sum(marginal_prob)
+        
+        # Mutual information as entanglement measure
+        mutual_info = 0.0
+        for jp, mp in zip(joint_prob, marginal_prob):
+            if jp > 1e-8 and mp > 1e-8:
+                mutual_info += jp * np.log(jp / mp)
+        
+        # Normalize to [0,1]
+        return float(min(1.0, mutual_info / np.log(2)))
+    
+    def coherence_decay(self, hv: np.ndarray, decay_rate: float = 0.1) -> np.ndarray:
+        """Apply coherence decay to simulate memory degradation."""
+        # Add noise proportional to decay rate
+        noise = self._rng.rand(self.dim) * decay_rate
+        decayed = hv.astype(np.float32) + noise
+        
+        # Maintain binary nature with probability-based thresholding
+        probabilities = np.abs(decayed)
+        probabilities = probabilities / (np.max(probabilities) + 1e-8)
+        random_vals = self._rng.rand(self.dim)
+        
+        return (random_vals < probabilities * (1 - decay_rate)).astype(self.dtype)
+    
+    def adaptive_threshold(self, hv: np.ndarray, target_sparsity: float = 0.5) -> np.ndarray:
+        """Adaptive thresholding to maintain target sparsity."""
+        hv_float = hv.astype(np.float32)
+        
+        # Find threshold that gives target sparsity
+        sorted_vals = np.sort(hv_float)
+        threshold_idx = int((1 - target_sparsity) * len(sorted_vals))
+        threshold = sorted_vals[threshold_idx] if threshold_idx < len(sorted_vals) else sorted_vals[-1]
+        
+        return (hv_float >= threshold).astype(self.dtype)
+    
+    # Hierarchical and compositional operations
+    
+    def hierarchical_bind(self, structure: dict) -> np.ndarray:
+        """Hierarchical binding for complex compositional structures."""
+        def _bind_structure(struct):
+            if isinstance(struct, np.ndarray):
+                return struct
+            elif isinstance(struct, dict):
+                if not struct:
+                    return self.random_hv()
+                
+                bound_items = []
+                for key, value in struct.items():
+                    key_hv = self.random_hv()  # Should use item memory in practice
+                    value_hv = _bind_structure(value)
+                    bound_pair = self.bind(key_hv, value_hv)
+                    bound_items.append(bound_pair)
+                
+                return self.bundle(bound_items)
+            elif isinstance(struct, list):
+                if not struct:
+                    return self.random_hv()
+                
+                bound_items = [_bind_structure(item) for item in struct]
+                return self.bundle(bound_items)
+            else:
+                # Convert scalar to hypervector
+                return self.random_hv()
+        
+        return _bind_structure(structure)
+    
+    def semantic_projection(self, hv: np.ndarray, basis_hvs: List[np.ndarray]) -> List[float]:
+        """Project hypervector onto semantic basis."""
+        if not basis_hvs:
+            return []
+        
+        # Compute similarities with each basis vector
+        similarities = []
+        for basis_hv in basis_hvs:
+            sim = self.cosine_similarity(hv, basis_hv)
+            similarities.append(sim)
+        
+        # Normalize to get projection coefficients
+        similarities = np.array(similarities)
+        norm = np.linalg.norm(similarities)
+        
+        if norm > 1e-8:
+            return (similarities / norm).tolist()
+        else:
+            return [0.0] * len(basis_hvs)
