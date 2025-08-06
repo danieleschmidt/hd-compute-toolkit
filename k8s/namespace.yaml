@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hd-compute-toolkit
+  labels:
+    name: hd-compute-toolkit
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: infrastructure

@@ -1,0 +1,115 @@
+# HD Compute Toolkit - Production Configuration
+# Production-optimized settings with security and performance focus
+
+application:
+  name: "HD-Compute-Toolkit"
+  version: "1.0.0"
+  environment: "production"
+  debug: false
+  
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  max_connections: 1000
+  timeout: 60
+  keepalive: 75
+  
+logging:
+  level: "INFO"
+  format: "json"
+  output: "stdout"
+  audit_enabled: true
+  audit_file: "/app/logs/audit.log"
+  max_size: "100MB"
+  backup_count: 10
+  
+database:
+  host: "postgres-service"
+  port: 5432
+  database: "hdc_experiments"
+  username: "${POSTGRES_USER}"
+  password: "${POSTGRES_PASSWORD}"
+  pool_size: 10
+  max_overflow: 20
+  pool_timeout: 30
+  pool_recycle: 3600
+  ssl_mode: "prefer"
+  
+redis:
+  host: "redis-service"
+  port: 6379
+  password: "${REDIS_PASSWORD}"
+  db: 0
+  max_connections: 20
+  socket_timeout: 5
+  socket_connect_timeout: 5
+  health_check_interval: 30
+  
+hdc:
+  default_device: "cpu"
+  dimension: 1000
+  cache_enabled: true
+  cache_max_size: 1000
+  cache_ttl: 3600
+  enable_profiling: false
+  benchmark_mode: false
+  
+performance:
+  max_workers: 4
+  batch_size: 100
+  memory_limit: "2GB"
+  cpu_limit: "2000m"
+  enable_optimization: true
+  
+security:
+  enable_security_scan: true
+  strict_input_validation: true
+  rate_limit_enabled: true
+  rate_limit_requests_per_minute: 1000
+  rate_limit_burst: 100
+  cors_enabled: true
+  cors_origins: ["https://your-domain.com"]
+  csrf_protection: true
+  content_security_policy: "default-src 'self'; script-src 'self' 'unsafe-inline'"
+  
+compliance:
+  gdpr_enabled: true
+  audit_logging: true
+  data_retention_days: 2555  # 7 years
+  audit_retention_days: 2555
+  privacy_mode: true
+  anonymization_enabled: true
+  
+internationalization:
+  enabled: true
+  default_locale: "en"
+  supported_locales: ["en", "es", "fr", "de", "ja", "zh", "pt", "ru"]
+  fallback_locale: "en"
+  
+monitoring:
+  enabled: true
+  metrics_port: 9090
+  health_check_path: "/health"
+  ready_check_path: "/ready"
+  metrics_path: "/metrics"
+  
+storage:
+  data_dir: "/app/data"
+  log_dir: "/app/logs"
+  models_dir: "/app/models"
+  temp_dir: "/tmp"
+  backup_enabled: true
+  backup_schedule: "0 2 * * *"  # Daily at 2 AM
+  
+features:
+  api_enabled: true
+  web_ui_enabled: false  # Disabled in production for security
+  admin_panel_enabled: false
+  debug_endpoints_enabled: false
+  
+limits:
+  max_request_size: "100MB"
+  max_file_size: "50MB"
+  max_memory_per_request: "500MB"
+  max_processing_time: 300  # seconds

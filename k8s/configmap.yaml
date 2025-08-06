@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hdc-toolkit-config
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: config
+data:
+  # Application configuration
+  HDC_ENV: "production"
+  HDC_LOG_LEVEL: "INFO"
+  HDC_DEFAULT_DEVICE: "cpu"
+  PYTHONPATH: "/app"
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  
+  # Cache configuration
+  HDC_CACHE_ENABLED: "true"
+  HDC_CACHE_MAX_SIZE: "1000"
+  HDC_CACHE_TTL: "3600"
+  
+  # Performance settings
+  HDC_ENABLE_PROFILING: "false"
+  HDC_BENCHMARK_MODE: "false"
+  HDC_MAX_WORKERS: "4"
+  
+  # Security settings
+  HDC_SECURITY_SCAN_ENABLED: "true"
+  HDC_INPUT_VALIDATION_STRICT: "true"
+  HDC_AUDIT_LOGGING: "true"
+  
+  # Internationalization
+  HDC_DEFAULT_LOCALE: "en"
+  HDC_I18N_ENABLED: "true"
+  
+  # Compliance
+  HDC_GDPR_COMPLIANCE: "true"
+  HDC_DATA_RETENTION_DAYS: "2555"  # 7 years
+  HDC_AUDIT_RETENTION_DAYS: "2555"
+  
+  # Monitoring
+  HDC_METRICS_ENABLED: "true"
+  HDC_HEALTH_CHECK_INTERVAL: "30"
+  
+  # Database settings
+  POSTGRES_DB: "hdc_experiments"
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  
+  # Redis settings
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  
+  # Storage paths
+  HDC_DATA_DIR: "/app/data"
+  HDC_LOG_DIR: "/app/logs"
+  HDC_MODELS_DIR: "/app/models"

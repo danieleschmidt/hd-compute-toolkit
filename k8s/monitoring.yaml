@@ -1,0 +1,258 @@
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: hdc-toolkit-metrics
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hd-compute-toolkit
+      app.kubernetes.io/component: service
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+    scrapeTimeout: 10s
+
+---
+# Prometheus alerting rules
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: hdc-toolkit-alerts
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: monitoring
+    prometheus: kube-prometheus
+spec:
+  groups:
+  - name: hdc-toolkit
+    interval: 30s
+    rules:
+    # High error rate
+    - alert: HDCToolkitHighErrorRate
+      expr: |
+        (
+          rate(http_requests_total{job="hdc-toolkit-service", code!~"2.."}[5m]) /
+          rate(http_requests_total{job="hdc-toolkit-service"}[5m])
+        ) * 100 > 5
+      for: 2m
+      labels:
+        severity: warning
+        service: hdc-toolkit
+      annotations:
+        summary: "High error rate detected for HD Compute Toolkit"
+        description: "Error rate is {{ $value }}% for the past 5 minutes"
+    
+    # High response time
+    - alert: HDCToolkitHighResponseTime
+      expr: |
+        histogram_quantile(0.95,
+          rate(http_request_duration_seconds_bucket{job="hdc-toolkit-service"}[5m])
+        ) > 1
+      for: 3m
+      labels:
+        severity: warning
+        service: hdc-toolkit
+      annotations:
+        summary: "High response time detected for HD Compute Toolkit"
+        description: "95th percentile response time is {{ $value }}s"
+    
+    # Pod not ready
+    - alert: HDCToolkitPodNotReady
+      expr: |
+        kube_pod_status_ready{condition="false", namespace="hd-compute-toolkit", 
+        pod=~"hdc-toolkit-app-.*"} == 1
+      for: 5m
+      labels:
+        severity: critical
+        service: hdc-toolkit
+      annotations:
+        summary: "HD Compute Toolkit pod not ready"
+        description: "Pod {{ $labels.pod }} has been not ready for more than 5 minutes"
+    
+    # High memory usage
+    - alert: HDCToolkitHighMemoryUsage
+      expr: |
+        (
+          container_memory_working_set_bytes{namespace="hd-compute-toolkit", 
+          container="hdc-toolkit"} /
+          container_spec_memory_limit_bytes{namespace="hd-compute-toolkit", 
+          container="hdc-toolkit"}
+        ) * 100 > 85
+      for: 5m
+      labels:
+        severity: warning
+        service: hdc-toolkit
+      annotations:
+        summary: "High memory usage for HD Compute Toolkit"
+        description: "Memory usage is {{ $value }}% of limit"
+    
+    # High CPU usage
+    - alert: HDCToolkitHighCPUUsage
+      expr: |
+        (
+          rate(container_cpu_usage_seconds_total{namespace="hd-compute-toolkit", 
+          container="hdc-toolkit"}[5m]) /
+          container_spec_cpu_quota{namespace="hd-compute-toolkit", 
+          container="hdc-toolkit"} * 
+          container_spec_cpu_period{namespace="hd-compute-toolkit", 
+          container="hdc-toolkit"}
+        ) * 100 > 85
+      for: 5m
+      labels:
+        severity: warning
+        service: hdc-toolkit
+      annotations:
+        summary: "High CPU usage for HD Compute Toolkit"
+        description: "CPU usage is {{ $value }}% of limit"
+    
+    # Database connection issues
+    - alert: HDCToolkitDatabaseConnectionFailure
+      expr: |
+        increase(database_connection_failures_total{service="hdc-toolkit"}[5m]) > 0
+      for: 1m
+      labels:
+        severity: critical
+        service: hdc-toolkit
+      annotations:
+        summary: "Database connection failures detected"
+        description: "{{ $value }} database connection failures in the last 5 minutes"
+    
+    # Security violations
+    - alert: HDCToolkitSecurityViolation
+      expr: |
+        increase(security_violations_total{service="hdc-toolkit"}[5m]) > 0
+      for: 0m
+      labels:
+        severity: critical
+        service: hdc-toolkit
+      annotations:
+        summary: "Security violation detected"
+        description: "{{ $value }} security violations detected in the last 5 minutes"
+
+---
+# Grafana Dashboard ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hdc-toolkit-dashboard
+  namespace: hd-compute-toolkit
+  labels:
+    app.kubernetes.io/name: hd-compute-toolkit
+    app.kubernetes.io/component: monitoring
+    grafana_dashboard: "1"
+data:
+  hdc-toolkit-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "HD Compute Toolkit",
+        "tags": ["hdc", "machine-learning"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(http_requests_total{job=\"hdc-toolkit-service\"}[5m])",
+                "legendFormat": "{{method}} {{status}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "requests/sec"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": 2,
+            "title": "Response Time",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"hdc-toolkit-service\"}[5m]))",
+                "legendFormat": "95th percentile"
+              },
+              {
+                "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=\"hdc-toolkit-service\"}[5m]))",
+                "legendFormat": "50th percentile"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "seconds"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 0
+            }
+          },
+          {
+            "id": 3,
+            "title": "Memory Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "container_memory_working_set_bytes{namespace=\"hd-compute-toolkit\", container=\"hdc-toolkit\"}",
+                "legendFormat": "{{pod}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "bytes"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 8
+            }
+          },
+          {
+            "id": 4,
+            "title": "CPU Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(container_cpu_usage_seconds_total{namespace=\"hd-compute-toolkit\", container=\"hdc-toolkit\"}[5m])",
+                "legendFormat": "{{pod}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "cores"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 8
+            }
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
