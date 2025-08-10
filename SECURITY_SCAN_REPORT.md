@@ -1,10 +1,10 @@
 # HD-Compute-Toolkit Security Scan Report
 
-**Scan Date**: 2025-08-08T16:34:06.880400
+**Scan Date**: 2025-08-10T01:06:16.113751
 
 ## Executive Summary
-- **Total Issues**: 38
-- **High Severity**: 19
+- **Total Issues**: 56
+- **High Severity**: 33
 
 ⚠️ **Security issues detected.** Review and remediation required.
 
@@ -63,6 +63,30 @@
 **Line**: 128
 **Category**: hardcoded_secrets
 **Match**: `password="test_password"`
+
+### 🔴 security_pattern
+**File**: `generation2_robustness_test.py`
+**Line**: 91
+**Category**: command_injection
+**Match**: `os.system(`
+
+### 🟡 security_pattern
+**File**: `generation2_robustness_test.py`
+**Line**: 89
+**Category**: hardcoded_secrets
+**Match**: `password = "hardcoded_password"`
+
+### 🔴 security_pattern
+**File**: `generation2_robustness_test.py`
+**Line**: 92
+**Category**: unsafe_eval
+**Match**: `eval(`
+
+### 🟢 security_pattern
+**File**: `generation2_robustness_test.py`
+**Line**: 107
+**Category**: debug_code
+**Match**: `print("✓ Hardcoded secret`
 
 ### 🟡 security_pattern
 **File**: `tests/test_quantum_task_planning.py`
@@ -167,6 +191,54 @@
 **Match**: `random.random(`
 
 ### 🔴 security_pattern
+**File**: `hd_compute/security/secure_imports.py`
+**Line**: 3
+**Category**: unsafe_eval
+**Match**: `__import__(`
+
+### 🔴 security_pattern
+**File**: `hd_compute/security/secure_imports.py`
+**Line**: 23
+**Category**: unsafe_eval
+**Match**: `__import__(`
+
+### 🔴 security_pattern
+**File**: `hd_compute/security/secure_imports.py`
+**Line**: 100
+**Category**: unsafe_eval
+**Match**: `__import__(`
+
+### 🔴 security_pattern
+**File**: `hd_compute/security/secure_imports.py`
+**Line**: 230
+**Category**: unsafe_eval
+**Match**: `__import__(`
+
+### 🔴 security_pattern
+**File**: `hd_compute/security/secure_serialization.py`
+**Line**: 23
+**Category**: unsafe_pickle
+**Match**: `pickle.load(`
+
+### 🔴 security_pattern
+**File**: `hd_compute/security/secure_serialization.py`
+**Line**: 184
+**Category**: unsafe_pickle
+**Match**: `pickle.load(`
+
+### 🟡 security_pattern
+**File**: `hd_compute/security/security_config.py`
+**Line**: 414
+**Category**: weak_crypto
+**Match**: `hashlib.md5(`
+
+### 🟡 security_pattern
+**File**: `hd_compute/security/security_config.py`
+**Line**: 431
+**Category**: weak_crypto
+**Match**: `hashlib.md5(`
+
+### 🔴 security_pattern
 **File**: `hd_compute/security/security_scanner.py`
 **Line**: 36
 **Category**: command_injection
@@ -225,6 +297,42 @@
 **Line**: 403
 **Category**: unsafe_pickle
 **Match**: `pickle.load(`
+
+### 🔴 security_pattern
+**File**: `tests/security/test_security_fixes.py`
+**Line**: 242
+**Category**: command_injection
+**Match**: `os.system(`
+
+### 🔴 security_pattern
+**File**: `tests/security/test_security_fixes.py`
+**Line**: 188
+**Category**: unsafe_eval
+**Match**: `eval(`
+
+### 🔴 security_pattern
+**File**: `tests/security/test_security_fixes.py`
+**Line**: 236
+**Category**: unsafe_eval
+**Match**: `eval(`
+
+### 🔴 security_pattern
+**File**: `tests/security/test_security_fixes.py`
+**Line**: 243
+**Category**: unsafe_eval
+**Match**: `exec(`
+
+### 🔴 security_pattern
+**File**: `tests/security/test_security_fixes.py`
+**Line**: 237
+**Category**: unsafe_eval
+**Match**: `__import__(`
+
+### 🔴 security_pattern
+**File**: `tests/security/test_security_fixes.py`
+**Line**: 244
+**Category**: unsafe_pickle
+**Match**: `pickle.loads(`
 
 ## Sensitive Files
 
