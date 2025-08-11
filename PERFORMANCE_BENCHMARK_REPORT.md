@@ -1,71 +1,71 @@
 # HD-Compute-Toolkit Performance Report
 
-**Generated**: 2025-08-08 16:34:23
+**Generated**: 2025-08-11 08:36:28
 
 ## Executive Summary
 - **Total Operations Tested**: 8
-- **Fastest Operation**: random_hv_generation (2.76ms avg)
-- **Slowest Operation**: sequence_encoding (35.07ms avg)
+- **Fastest Operation**: random_hv_generation (2.74ms avg)
+- **Slowest Operation**: sequence_encoding (34.31ms avg)
 
 ## Performance Profiles
 
 ### random_hv_generation
-- **Average Time**: 2.76ms
-- **Throughput**: 362 ops/sec
-- **P95 Latency**: 5.26ms
-- **P99 Latency**: 5.35ms
+- **Average Time**: 2.74ms
+- **Throughput**: 365 ops/sec
+- **P95 Latency**: 5.23ms
+- **P99 Latency**: 5.53ms
 - **Scalability Score**: 0.97
 
 ### bundle_operation
-- **Average Time**: 18.12ms
-- **Throughput**: 55 ops/sec
-- **P95 Latency**: 33.60ms
-- **P99 Latency**: 54.71ms
-- **Scalability Score**: 0.98
-
-### bind_operation
-- **Average Time**: 5.87ms
-- **Throughput**: 170 ops/sec
-- **P95 Latency**: 11.02ms
-- **P99 Latency**: 12.24ms
+- **Average Time**: 17.55ms
+- **Throughput**: 57 ops/sec
+- **P95 Latency**: 33.03ms
+- **P99 Latency**: 33.80ms
 - **Scalability Score**: 0.97
 
+### bind_operation
+- **Average Time**: 5.73ms
+- **Throughput**: 174 ops/sec
+- **P95 Latency**: 10.93ms
+- **P99 Latency**: 11.25ms
+- **Scalability Score**: 0.98
+
 ### cosine_similarity
-- **Average Time**: 6.52ms
-- **Throughput**: 153 ops/sec
-- **P95 Latency**: 12.31ms
-- **P99 Latency**: 12.77ms
+- **Average Time**: 6.42ms
+- **Throughput**: 156 ops/sec
+- **P95 Latency**: 12.29ms
+- **P99 Latency**: 12.49ms
 - **Scalability Score**: 0.97
 
 ### hamming_distance
-- **Average Time**: 6.13ms
-- **Throughput**: 163 ops/sec
-- **P95 Latency**: 11.74ms
-- **P99 Latency**: 13.75ms
+- **Average Time**: 5.97ms
+- **Throughput**: 168 ops/sec
+- **P95 Latency**: 11.29ms
+- **P99 Latency**: 11.61ms
 - **Scalability Score**: 0.97
 
 ### fractional_bind
-- **Average Time**: 7.02ms
-- **Throughput**: 142 ops/sec
-- **P95 Latency**: 13.19ms
-- **P99 Latency**: 16.57ms
+- **Average Time**: 6.79ms
+- **Throughput**: 147 ops/sec
+- **P95 Latency**: 12.82ms
+- **P99 Latency**: 13.51ms
 - **Scalability Score**: 0.97
 
 ### sequence_encoding
-- **Average Time**: 35.07ms
+- **Average Time**: 34.31ms
 - **Throughput**: 29 ops/sec
-- **P95 Latency**: 68.07ms
-- **P99 Latency**: 69.92ms
+- **P95 Latency**: 65.65ms
+- **P99 Latency**: 67.54ms
 - **Scalability Score**: 0.97
 
 ### memory_operations
-- **Average Time**: 3.15ms
-- **Throughput**: 317 ops/sec
-- **P95 Latency**: 6.13ms
-- **P99 Latency**: 7.58ms
-- **Scalability Score**: 0.98
+- **Average Time**: 3.08ms
+- **Throughput**: 324 ops/sec
+- **P95 Latency**: 5.87ms
+- **P99 Latency**: 6.03ms
+- **Scalability Score**: 0.97
 
 ## Performance Recommendations
 
-- **bundle_operation**: Consider optimization (avg: 18.1ms)
-- **sequence_encoding**: Consider optimization (avg: 35.1ms)
+- **bundle_operation**: Consider optimization (avg: 17.6ms)
+- **sequence_encoding**: Consider optimization (avg: 34.3ms)
