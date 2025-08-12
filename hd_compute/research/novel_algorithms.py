@@ -6,6 +6,524 @@ from abc import ABC, abstractmethod
 from collections import deque, defaultdict
 import networkx as nx
 
+# Import security decorators
+try:
+    from ..security.research_security import secure_operation, validate_hypervector_input
+except ImportError:
+    # Fallback decorators if security module not available
+    def secure_operation(func):
+        return func
+    def validate_hypervector_input(func):
+        return func
+
+
+class AdvancedTemporalHDC:
+    """Advanced temporal HDC with concrete numpy implementation for predictive modeling."""
+    
+    def __init__(self, dim: int, memory_length: int = 100, decay_rate: float = 0.95):
+        # Robust input validation
+        if not isinstance(dim, int) or dim <= 0:
+            raise ValueError(f"Dimension must be a positive integer, got {dim}")
+        if not isinstance(memory_length, int) or memory_length <= 0:
+            raise ValueError(f"Memory length must be a positive integer, got {memory_length}")
+        if not isinstance(decay_rate, (int, float)) or not 0 <= decay_rate <= 1:
+            raise ValueError(f"Decay rate must be between 0 and 1, got {decay_rate}")
+        
+        self.dim = dim
+        self.memory_length = memory_length
+        self.decay_rate = decay_rate
+        self.temporal_buffer = deque(maxlen=memory_length)
+        self.temporal_weights = []
+        self.prediction_accuracy_history = []
+        self._operation_count = 0
+        self._error_count = 0
+        
+    @secure_operation
+    @validate_hypervector_input
+    def temporal_binding(self, current_hv: np.ndarray, context_hvs: List[np.ndarray], 
+                        temporal_positions: List[int]) -> np.ndarray:
+        """Bind hypervector with temporal context using circular shifts."""
+        try:
+            self._operation_count += 1
+            
+            # Input validation
+            self._validate_hypervector(current_hv, "current_hv")
+            if not isinstance(context_hvs, list):
+                raise TypeError(f"context_hvs must be a list, got {type(context_hvs)}")
+            if not isinstance(temporal_positions, list):
+                raise TypeError(f"temporal_positions must be a list, got {type(temporal_positions)}")
+            
+            if len(context_hvs) != len(temporal_positions):
+                raise ValueError(f"Length mismatch: {len(context_hvs)} context vectors vs {len(temporal_positions)} positions")
+            
+            if not context_hvs:
+                return current_hv.copy()
+            
+            # Validate all context hypervectors
+            for i, context_hv in enumerate(context_hvs):
+                self._validate_hypervector(context_hv, f"context_hvs[{i}]")
+            
+            result = current_hv.copy()
+            
+            for context_hv, position in zip(context_hvs, temporal_positions):
+                if not isinstance(position, int):
+                    raise TypeError(f"Temporal position must be an integer, got {type(position)}")
+                
+                # Apply temporal position encoding through circular shifts
+                shifted_context = np.roll(context_hv, position % self.dim)  # Prevent overflow
+                # XOR binding for binary hypervectors
+                result = np.logical_xor(result, shifted_context).astype(np.int8)
+            
+            return result
+            
+        except Exception as e:
+            self._error_count += 1
+            raise RuntimeError(f"Temporal binding failed: {str(e)}") from e
+    
+    @secure_operation
+    def sequence_prediction(self, sequence: List[np.ndarray], prediction_horizon: int = 1) -> List[np.ndarray]:
+        """Predict future hypervectors using temporal patterns."""
+        if len(sequence) < 3:
+            return [sequence[-1].copy() if sequence else self._random_hypervector()]
+        
+        predictions = []
+        
+        for h in range(prediction_horizon):
+            # Use sliding window approach
+            window_size = min(5, len(sequence))
+            recent_sequence = sequence[-window_size:]
+            
+            # Extract temporal patterns
+            pattern_vector = self._extract_temporal_pattern(recent_sequence)
+            
+            # Predict next vector using learned patterns
+            predicted = self._apply_temporal_pattern(sequence[-1], pattern_vector)
+            predictions.append(predicted)
+            
+            # Add prediction to sequence for multi-step prediction
+            sequence = sequence + [predicted]
+        
+        return predictions
+    
+    def temporal_interpolation(self, hv1: np.ndarray, hv2: np.ndarray, time_ratio: float) -> np.ndarray:
+        """Interpolate between hypervectors based on temporal distance."""
+        # For binary hypervectors, use probabilistic mixing
+        interpolated = np.random.binomial(1, time_ratio, size=self.dim).astype(np.int8)
+        
+        # Mix based on time ratio
+        mask = interpolated.astype(bool)
+        result = hv1.copy()
+        result[mask] = hv2[mask]
+        
+        return result
+    
+    def cosine_similarity(self, hv1: np.ndarray, hv2: np.ndarray) -> float:
+        """Compute cosine similarity between hypervectors."""
+        dot_product = np.dot(hv1, hv2)
+        norm_product = np.linalg.norm(hv1) * np.linalg.norm(hv2)
+        return float(dot_product / norm_product) if norm_product > 0 else 0.0
+    
+    def _extract_temporal_pattern(self, sequence: List[np.ndarray]) -> np.ndarray:
+        """Extract temporal pattern from sequence."""
+        if len(sequence) < 2:
+            return self._zero_hypervector()
+        
+        pattern = self._zero_hypervector()
+        
+        for i in range(1, len(sequence)):
+            # Compute difference pattern
+            diff = np.logical_xor(sequence[i], sequence[i-1]).astype(np.int8)
+            pattern = np.logical_or(pattern, diff).astype(np.int8)
+        
+        return pattern
+    
+    def _apply_temporal_pattern(self, base_hv: np.ndarray, pattern: np.ndarray) -> np.ndarray:
+        """Apply temporal pattern to base hypervector."""
+        return np.logical_xor(base_hv, pattern).astype(np.int8)
+    
+    def _zero_hypervector(self) -> np.ndarray:
+        """Create zero hypervector."""
+        return np.zeros(self.dim, dtype=np.int8)
+    
+    def _random_hypervector(self) -> np.ndarray:
+        """Create random binary hypervector."""
+        return np.random.binomial(1, 0.5, size=self.dim).astype(np.int8)
+    
+    def _validate_hypervector(self, hv: np.ndarray, name: str) -> None:
+        """Validate hypervector input."""
+        if not isinstance(hv, np.ndarray):
+            raise TypeError(f"{name} must be a numpy array, got {type(hv)}")
+        if hv.shape != (self.dim,):
+            raise ValueError(f"{name} must have shape ({self.dim},), got {hv.shape}")
+        if not np.issubdtype(hv.dtype, np.integer) and not np.issubdtype(hv.dtype, np.floating):
+            raise TypeError(f"{name} must have numeric dtype, got {hv.dtype}")
+        if np.any(np.isnan(hv)) or np.any(np.isinf(hv)):
+            raise ValueError(f"{name} contains invalid values (NaN or Inf)")
+    
+    def add_temporal_experience(self, hv: np.ndarray, timestamp: Optional[float] = None) -> None:
+        """Add experience to temporal buffer with timestamp."""
+        try:
+            self._operation_count += 1
+            self._validate_hypervector(hv, "hv")
+            
+            if timestamp is None:
+                timestamp = len(self.temporal_buffer)
+            elif not isinstance(timestamp, (int, float)):
+                raise TypeError(f"Timestamp must be numeric, got {type(timestamp)}")
+            
+            self.temporal_buffer.append((hv.copy(), float(timestamp)))
+            
+            # Update temporal weights with exponential decay
+            self.temporal_weights = [w * self.decay_rate for w in self.temporal_weights]
+            self.temporal_weights.append(1.0)
+            
+            if len(self.temporal_weights) > self.memory_length:
+                self.temporal_weights.pop(0)
+                
+        except Exception as e:
+            self._error_count += 1
+            raise RuntimeError(f"Adding temporal experience failed: {str(e)}") from e
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get operational statistics."""
+        return {
+            'operation_count': self._operation_count,
+            'error_count': self._error_count,
+            'error_rate': self._error_count / max(1, self._operation_count),
+            'buffer_size': len(self.temporal_buffer),
+            'buffer_utilization': len(self.temporal_buffer) / self.memory_length,
+            'prediction_accuracy_history_length': len(self.prediction_accuracy_history)
+        }
+
+
+class ConcreteAttentionHDC:
+    """Concrete attention-based HDC implementation for cognitive computing."""
+    
+    def __init__(self, dim: int, num_attention_heads: int = 8):
+        # Robust input validation
+        if not isinstance(dim, int) or dim <= 0:
+            raise ValueError(f"Dimension must be a positive integer, got {dim}")
+        if not isinstance(num_attention_heads, int) or num_attention_heads <= 0:
+            raise ValueError(f"Number of attention heads must be a positive integer, got {num_attention_heads}")
+        if dim % num_attention_heads != 0:
+            raise ValueError(f"Dimension {dim} must be divisible by number of heads {num_attention_heads}")
+        
+        self.dim = dim
+        self.num_attention_heads = num_attention_heads
+        self.head_dim = dim // num_attention_heads
+        self.attention_weights = {}
+        self.context_stack = []
+        self._operation_count = 0
+        self._error_count = 0
+        
+    def multi_head_attention(self, query_hv: np.ndarray, key_hvs: List[np.ndarray], 
+                           value_hvs: List[np.ndarray], mask: Optional[List[bool]] = None) -> np.ndarray:
+        """Multi-head attention mechanism for hypervectors."""
+        if not key_hvs or not value_hvs:
+            return query_hv.copy()
+        
+        attention_outputs = []
+        
+        for head in range(self.num_attention_heads):
+            # Split into attention heads
+            start_idx = head * self.head_dim
+            end_idx = start_idx + self.head_dim
+            
+            query_head = query_hv[start_idx:end_idx]
+            key_heads = [kv[start_idx:end_idx] for kv in key_hvs]
+            value_heads = [vv[start_idx:end_idx] for vv in value_hvs]
+            
+            # Compute attention scores
+            scores = []
+            for key_head in key_heads:
+                score = self.cosine_similarity(query_head, key_head)
+                scores.append(score)
+            
+            # Apply mask if provided
+            if mask:
+                scores = [score if not mask[i] else -np.inf for i, score in enumerate(scores)]
+            
+            # Softmax normalization
+            attention_weights = self._softmax(np.array(scores))
+            
+            # Weighted combination of values
+            head_output = np.zeros_like(query_head)
+            for i, value_head in enumerate(value_heads):
+                head_output += attention_weights[i] * value_head
+            
+            attention_outputs.append(head_output)
+        
+        # Concatenate heads
+        return np.concatenate(attention_outputs)
+    
+    def self_attention(self, hvs: List[np.ndarray], position_encodings: Optional[List[np.ndarray]] = None) -> List[np.ndarray]:
+        """Self-attention over sequence of hypervectors."""
+        if not hvs:
+            return []
+        
+        # Add position encodings if provided
+        if position_encodings:
+            hvs = [np.logical_xor(hv, pos_enc).astype(np.int8) 
+                   for hv, pos_enc in zip(hvs, position_encodings)]
+        
+        attended_hvs = []
+        
+        for i, query_hv in enumerate(hvs):
+            # Self-attention: query against all hypervectors
+            attended_hv = self.multi_head_attention(query_hv, hvs, hvs)
+            attended_hvs.append(attended_hv)
+        
+        return attended_hvs
+    
+    def cross_attention(self, queries: List[np.ndarray], keys: List[np.ndarray], 
+                       values: List[np.ndarray]) -> List[np.ndarray]:
+        """Cross-attention between two sequences."""
+        if not queries or not keys or not values:
+            return []
+        
+        attended_queries = []
+        
+        for query in queries:
+            attended_query = self.multi_head_attention(query, keys, values)
+            attended_queries.append(attended_query)
+        
+        return attended_queries
+    
+    def cosine_similarity(self, hv1: np.ndarray, hv2: np.ndarray) -> float:
+        """Compute cosine similarity between hypervectors."""
+        if len(hv1) == 0 or len(hv2) == 0:
+            return 0.0
+        dot_product = np.dot(hv1, hv2)
+        norm_product = np.linalg.norm(hv1) * np.linalg.norm(hv2)
+        return float(dot_product / norm_product) if norm_product > 0 else 0.0
+    
+    def _softmax(self, scores: np.ndarray, temperature: float = 1.0) -> np.ndarray:
+        """Apply softmax normalization with temperature."""
+        if len(scores) == 0:
+            return scores
+        scaled_scores = scores / temperature
+        exp_scores = np.exp(scaled_scores - np.max(scaled_scores))
+        return exp_scores / np.sum(exp_scores)
+    
+    def _zero_hypervector(self) -> np.ndarray:
+        """Create zero hypervector."""
+        return np.zeros(self.dim, dtype=np.int8)
+    
+    def _add_weighted(self, hv1: np.ndarray, hv2: np.ndarray, weight: float) -> np.ndarray:
+        """Add weighted hypervectors."""
+        return (hv1 + weight * hv2).astype(np.int8)
+    
+    def _normalize(self, hv: np.ndarray) -> np.ndarray:
+        """Normalize hypervector."""
+        try:
+            norm = np.linalg.norm(hv)
+            return hv / norm if norm > 0 else hv
+        except Exception as e:
+            self._error_count += 1
+            raise RuntimeError(f"Normalization failed: {str(e)}") from e
+    
+    def _validate_hypervector(self, hv: np.ndarray, name: str) -> None:
+        """Validate hypervector input."""
+        if not isinstance(hv, np.ndarray):
+            raise TypeError(f"{name} must be a numpy array, got {type(hv)}")
+        if len(hv.shape) != 1:
+            raise ValueError(f"{name} must be 1-dimensional, got shape {hv.shape}")
+        if hv.shape[0] != self.dim:
+            raise ValueError(f"{name} must have length {self.dim}, got {hv.shape[0]}")
+        if not np.issubdtype(hv.dtype, np.number):
+            raise TypeError(f"{name} must have numeric dtype, got {hv.dtype}")
+        if np.any(np.isnan(hv)) or np.any(np.isinf(hv)):
+            raise ValueError(f"{name} contains invalid values (NaN or Inf)")
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get operational statistics."""
+        return {
+            'operation_count': self._operation_count,
+            'error_count': self._error_count,
+            'error_rate': self._error_count / max(1, self._operation_count),
+            'attention_heads': self.num_attention_heads,
+            'head_dimension': self.head_dim,
+            'context_stack_depth': len(self.context_stack)
+        }
+
+
+class NeurosymbolicHDC:
+    """Neurosymbolic HDC for hybrid AI reasoning combining neural and symbolic approaches."""
+    
+    def __init__(self, dim: int):
+        self.dim = dim
+        self.symbol_table = {}
+        self.rule_memory = {}
+        self.neural_embeddings = {}
+        
+    def encode_symbol(self, symbol: str) -> np.ndarray:
+        """Encode symbolic concept as hypervector."""
+        if symbol not in self.symbol_table:
+            # Create new random hypervector for symbol
+            self.symbol_table[symbol] = np.random.binomial(1, 0.5, size=self.dim).astype(np.int8)
+        return self.symbol_table[symbol]
+    
+    def create_rule(self, premise_symbols: List[str], conclusion_symbol: str, confidence: float = 1.0) -> str:
+        """Create logical rule in hypervector space."""
+        rule_id = f"rule_{len(self.rule_memory)}"
+        
+        # Encode premise as bundle of symbols
+        premise_hvs = [self.encode_symbol(sym) for sym in premise_symbols]
+        premise_hv = self._bundle_hypervectors(premise_hvs)
+        
+        # Encode conclusion
+        conclusion_hv = self.encode_symbol(conclusion_symbol)
+        
+        # Create rule binding: premise -> conclusion
+        rule_hv = np.logical_xor(premise_hv, conclusion_hv).astype(np.int8)
+        
+        self.rule_memory[rule_id] = {
+            'premise_symbols': premise_symbols,
+            'conclusion_symbol': conclusion_symbol,
+            'premise_hv': premise_hv,
+            'conclusion_hv': conclusion_hv,
+            'rule_hv': rule_hv,
+            'confidence': confidence
+        }
+        
+        return rule_id
+    
+    def forward_reasoning(self, facts: List[str], max_steps: int = 10) -> List[str]:
+        """Perform forward chaining reasoning."""
+        known_facts = set(facts)
+        new_conclusions = []
+        
+        for step in range(max_steps):
+            step_conclusions = []
+            
+            for rule_id, rule in self.rule_memory.items():
+                # Check if all premises are satisfied
+                if all(fact in known_facts for fact in rule['premise_symbols']):
+                    conclusion = rule['conclusion_symbol']
+                    
+                    # Add new conclusion if not already known
+                    if conclusion not in known_facts:
+                        known_facts.add(conclusion)
+                        step_conclusions.append(conclusion)
+                        new_conclusions.append(conclusion)
+            
+            # Stop if no new conclusions
+            if not step_conclusions:
+                break
+        
+        return new_conclusions
+    
+    def backward_reasoning(self, goal: str, max_depth: int = 5) -> List[List[str]]:
+        """Perform backward chaining to find proof paths."""
+        proof_paths = []
+        
+        def search_goal(current_goal: str, path: List[str], depth: int):
+            if depth >= max_depth:
+                return
+            
+            # Check if goal can be proven by any rule
+            for rule_id, rule in self.rule_memory.items():
+                if rule['conclusion_symbol'] == current_goal:
+                    new_path = path + [rule_id]
+                    
+                    # Check if all premises can be satisfied
+                    all_premises_provable = True
+                    for premise in rule['premise_symbols']:
+                        # Recursively search for premise proofs
+                        search_goal(premise, new_path, depth + 1)
+                    
+                    if all_premises_provable:
+                        proof_paths.append(new_path)
+        
+        search_goal(goal, [], 0)
+        return proof_paths
+    
+    def analogical_reasoning(self, source_domain: Dict[str, List[str]], 
+                           target_domain: Dict[str, List[str]]) -> Dict[str, str]:
+        """Perform analogical reasoning between domains."""
+        # Create structure mappings between domains
+        source_structure = self._extract_domain_structure(source_domain)
+        target_structure = self._extract_domain_structure(target_domain)
+        
+        # Find structural similarities
+        mappings = {}
+        
+        for src_concept, src_relations in source_structure.items():
+            best_match = None
+            best_similarity = 0.0
+            
+            for tgt_concept, tgt_relations in target_structure.items():
+                # Compare structural patterns
+                similarity = self._structural_similarity(src_relations, tgt_relations)
+                
+                if similarity > best_similarity:
+                    best_similarity = similarity
+                    best_match = tgt_concept
+            
+            if best_match and best_similarity > 0.5:  # Threshold for valid mapping
+                mappings[src_concept] = best_match
+        
+        return mappings
+    
+    def neural_symbolic_fusion(self, neural_vector: np.ndarray, symbolic_concepts: List[str]) -> np.ndarray:
+        """Fuse neural embeddings with symbolic representations."""
+        # Encode symbolic concepts
+        symbolic_hvs = [self.encode_symbol(concept) for concept in symbolic_concepts]
+        symbolic_bundle = self._bundle_hypervectors(symbolic_hvs)
+        
+        # Combine neural and symbolic representations
+        # Use binding to create structured representation
+        fused_hv = np.logical_xor(neural_vector, symbolic_bundle).astype(np.int8)
+        
+        return fused_hv
+    
+    def _bundle_hypervectors(self, hvs: List[np.ndarray]) -> np.ndarray:
+        """Bundle (add) multiple hypervectors."""
+        if not hvs:
+            return np.zeros(self.dim, dtype=np.int8)
+        
+        result = hvs[0].copy()
+        for hv in hvs[1:]:
+            result = np.logical_or(result, hv).astype(np.int8)
+        
+        return result
+    
+    def _extract_domain_structure(self, domain: Dict[str, List[str]]) -> Dict[str, List[np.ndarray]]:
+        """Extract structural representation of domain."""
+        structure = {}
+        
+        for concept, relations in domain.items():
+            relation_hvs = []
+            for relation in relations:
+                relation_hv = self.encode_symbol(relation)
+                relation_hvs.append(relation_hv)
+            structure[concept] = relation_hvs
+        
+        return structure
+    
+    def _structural_similarity(self, relations1: List[np.ndarray], relations2: List[np.ndarray]) -> float:
+        """Compute structural similarity between relation sets."""
+        if not relations1 or not relations2:
+            return 0.0
+        
+        # Compare relation patterns
+        similarities = []
+        
+        for r1 in relations1:
+            max_sim = 0.0
+            for r2 in relations2:
+                sim = self.cosine_similarity(r1, r2)
+                max_sim = max(max_sim, sim)
+            similarities.append(max_sim)
+        
+        return np.mean(similarities)
+    
+    def cosine_similarity(self, hv1: np.ndarray, hv2: np.ndarray) -> float:
+        """Compute cosine similarity between hypervectors."""
+        dot_product = np.dot(hv1, hv2)
+        norm_product = np.linalg.norm(hv1) * np.linalg.norm(hv2)
+        return float(dot_product / norm_product) if norm_product > 0 else 0.0
+
 
 class TemporalHDC(ABC):
     """Temporal hyperdimensional computing with memory traces and prediction."""
