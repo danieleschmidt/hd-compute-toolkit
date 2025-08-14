@@ -180,6 +180,18 @@ class HDComputePython(HDCompute):
         Returns:
             Bound hypervector
         """
+        # Ensure both inputs are SimpleArray objects
+        if not isinstance(hv1, SimpleArray):
+            if isinstance(hv1, (int, float)):
+                hv1 = SimpleArray([float(hv1)] * self.dim)
+            else:
+                hv1 = SimpleArray(hv1)
+        if not isinstance(hv2, SimpleArray):
+            if isinstance(hv2, (int, float)):
+                hv2 = SimpleArray([float(hv2)] * self.dim)
+            else:
+                hv2 = SimpleArray(hv2)
+        
         if len(hv1.data) != len(hv2.data):
             raise ValueError("Hypervectors must have same length")
         
@@ -203,6 +215,18 @@ class HDComputePython(HDCompute):
         Returns:
             Cosine similarity value
         """
+        # Ensure both inputs are SimpleArray objects
+        if not isinstance(hv1, SimpleArray):
+            if isinstance(hv1, (int, float)):
+                hv1 = SimpleArray([float(hv1)] * self.dim)
+            else:
+                hv1 = SimpleArray(hv1)
+        if not isinstance(hv2, SimpleArray):
+            if isinstance(hv2, (int, float)):
+                hv2 = SimpleArray([float(hv2)] * self.dim)
+            else:
+                hv2 = SimpleArray(hv2)
+        
         dot_product = hv1.dot(hv2)
         norm1 = hv1.norm()
         norm2 = hv2.norm()
