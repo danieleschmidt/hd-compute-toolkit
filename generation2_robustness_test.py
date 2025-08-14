@@ -272,11 +272,11 @@ def test_logging_and_audit():
         
         try:
             # Initialize audit logger
-            audit_logger = AuditLogger(log_file_path=audit_log_path)
+            audit_logger = AuditLogger(audit_file=audit_log_path)
             
             # Log some audit events
-            audit_logger.log_access("user1", "hdc_operation", "bundle", {"dim": 1000})
-            audit_logger.log_security_event("potential_vulnerability", "input_validation", "medium")
+            audit_logger.log_data_access("bundle", "hypervectors", "user1")
+            audit_logger.log_security_event("medium", "input_validation", "potential_vulnerability")
             
             # Check if log file was created and has content
             if os.path.exists(audit_log_path):

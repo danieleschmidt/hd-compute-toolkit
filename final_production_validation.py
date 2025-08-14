@@ -319,10 +319,12 @@ class ProductionReadinessValidator:
         total_features += 1
         try:
             # Import robust validation system
-            exec("from robust_validation_system import RobustHDC")
-            from hd_compute import HDComputePython
-            
-            robust_hdc = eval("RobustHDC(HDComputePython, dim=500)")
+            try:
+                from robust_validation_system import RobustHDC
+                from hd_compute import HDComputePython
+                robust_hdc = RobustHDC(HDComputePython, dim=500)
+            except ImportError:
+                robust_hdc = None
             hv = robust_hdc.random_hv()
             
             if hv is not None:
