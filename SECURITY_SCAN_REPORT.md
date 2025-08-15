@@ -1,10 +1,10 @@
 # HD-Compute-Toolkit Security Scan Report
 
-**Scan Date**: 2025-08-14T14:50:17.883106
+**Scan Date**: 2025-08-15T23:16:19.346552
 
 ## Executive Summary
-- **Total Issues**: 67
-- **High Severity**: 39
+- **Total Issues**: 65
+- **High Severity**: 37
 
 ⚠️ **Security issues detected.** Review and remediation required.
 
@@ -18,37 +18,25 @@
 
 ### 🔴 security_pattern
 **File**: `final_production_validation.py`
-**Line**: 325
+**Line**: 343
 **Category**: unsafe_eval
 **Match**: `eval(`
 
 ### 🔴 security_pattern
 **File**: `final_production_validation.py`
-**Line**: 341
+**Line**: 360
 **Category**: unsafe_eval
 **Match**: `eval(`
 
 ### 🔴 security_pattern
 **File**: `final_production_validation.py`
-**Line**: 358
-**Category**: unsafe_eval
-**Match**: `eval(`
-
-### 🔴 security_pattern
-**File**: `final_production_validation.py`
-**Line**: 322
+**Line**: 340
 **Category**: unsafe_eval
 **Match**: `exec(`
 
 ### 🔴 security_pattern
 **File**: `final_production_validation.py`
-**Line**: 338
-**Category**: unsafe_eval
-**Match**: `exec(`
-
-### 🔴 security_pattern
-**File**: `final_production_validation.py`
-**Line**: 355
+**Line**: 357
 **Category**: unsafe_eval
 **Match**: `exec(`
 
