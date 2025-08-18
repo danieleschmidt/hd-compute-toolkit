@@ -19,14 +19,35 @@
 
 ### Hardware Acceleration 🔄
 - [ ] FPGA kernel implementations (Verilog/HLS)
+  - Xilinx Vivado HLS implementation for bundling operations
+  - Intel FPGA OpenCL kernels for binding operations
+  - Custom bitstream generation for 10K-32K dimensions
 - [ ] Vulkan compute shader integration
+  - Cross-platform GPU acceleration (NVIDIA, AMD, Intel)
+  - Memory-efficient compute pipelines
+  - Synchronization optimizations for batch operations
 - [ ] CUDA kernel optimizations
+  - Custom kernels for large-scale bundling
+  - Tensor Core utilization where applicable
+  - Memory coalescing patterns for hypervector operations
 - [ ] Performance benchmarking suite
+  - Automated benchmark runner with CI integration
+  - Hardware-specific performance profiles
+  - Regression detection and alerting
 
 ### Memory Management 🔄
 - [ ] Memory pooling for hypervectors
+  - Pre-allocated pools for common dimensions
+  - Garbage collection optimization
+  - Memory fragmentation reduction
 - [ ] Efficient sparse hypervector support
+  - Compressed sparse row (CSR) format support
+  - Sparse-dense operation optimizations
+  - Dynamic sparsity threshold tuning
 - [ ] Distributed memory structures
+  - Sharded item memory across multiple nodes
+  - Consistent hashing for hypervector distribution
+  - Fault-tolerant memory replication
 
 ## Version 0.3.0 - Applications & Examples
 **Target: Q3 2025**
