@@ -1,0 +1,66 @@
+# CODEOWNERS file for HD-Compute-Toolkit
+# This file defines code ownership for automated review assignments
+# 
+# Global ownership - all files require review from core maintainers
+* @terragon-labs/hd-compute-core
+
+# Core HDC algorithms and implementations
+/hd_compute/core/ @terragon-labs/hd-compute-algorithms
+/hd_compute/backends/pytorch/ @terragon-labs/pytorch-experts
+/hd_compute/backends/jax/ @terragon-labs/jax-experts
+/hd_compute/memory/ @terragon-labs/memory-experts
+
+# Hardware acceleration components
+/hd_compute/backends/fpga/ @terragon-labs/hardware-experts
+/hd_compute/backends/vulkan/ @terragon-labs/hardware-experts
+
+# Applications and examples
+/hd_compute/applications/ @terragon-labs/applications-team
+/examples/ @terragon-labs/applications-team
+
+# Performance and benchmarking
+/hd_compute/benchmarks/ @terragon-labs/performance-team
+/benchmarks/ @terragon-labs/performance-team
+/scripts/performance/ @terragon-labs/performance-team
+
+# Testing infrastructure
+/tests/ @terragon-labs/qa-team
+/tests/performance/ @terragon-labs/performance-team @terragon-labs/qa-team
+
+# Documentation
+/docs/ @terragon-labs/documentation-team
+README.md @terragon-labs/documentation-team
+*.md @terragon-labs/documentation-team
+
+# CI/CD and DevOps
+/.github/ @terragon-labs/devops-team
+/docker/ @terragon-labs/devops-team
+/scripts/ @terragon-labs/devops-team
+Dockerfile* @terragon-labs/devops-team
+docker-compose*.yml @terragon-labs/devops-team
+
+# Build and packaging
+/pyproject.toml @terragon-labs/build-team
+/setup.py @terragon-labs/build-team
+/requirements*.txt @terragon-labs/build-team
+/environment*.yml @terragon-labs/build-team
+
+# Security-sensitive files
+/.env.example @terragon-labs/security-team @terragon-labs/hd-compute-core
+/docs/security/ @terragon-labs/security-team
+/docs/runbooks/ @terragon-labs/security-team @terragon-labs/devops-team
+
+# Configuration files
+/.github/project-metrics.json @terragon-labs/devops-team @terragon-labs/performance-team
+/.pre-commit-config.yaml @terragon-labs/qa-team
+/tox.ini @terragon-labs/qa-team
+/pytest.ini @terragon-labs/qa-team
+
+# Research and academic materials
+/papers/ @terragon-labs/research-team
+/notebooks/ @terragon-labs/research-team @terragon-labs/applications-team
+
+# Legal and licensing
+/LICENSE @terragon-labs/legal-team @terragon-labs/hd-compute-core
+/NOTICE @terragon-labs/legal-team
+/SECURITY.md @terragon-labs/security-team @terragon-labs/legal-team
