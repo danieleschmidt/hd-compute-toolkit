@@ -1,6 +1,8 @@
 """JAX backend for hyperdimensional computing."""
 
 try:
+    import jax
+    import jaxlib
     from .hdc_jax import HDComputeJAX
     __all__ = ["HDComputeJAX"]
 except ImportError:
