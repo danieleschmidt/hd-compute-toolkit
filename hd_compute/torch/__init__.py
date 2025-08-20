@@ -1,6 +1,7 @@
 """PyTorch backend for hyperdimensional computing."""
 
 try:
+    import torch
     from .hdc_torch import HDComputeTorch
     __all__ = ["HDComputeTorch"]
 except ImportError:
