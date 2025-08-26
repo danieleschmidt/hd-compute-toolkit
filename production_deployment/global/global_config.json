@@ -1,0 +1,94 @@
+{
+  "regions": {
+    "us-west-2": {
+      "name": "US West (Oregon)",
+      "primary": true,
+      "compliance": [
+        "CCPA"
+      ],
+      "languages": [
+        "en",
+        "es"
+      ],
+      "latency_target_ms": 100
+    },
+    "eu-west-1": {
+      "name": "Europe (Ireland)",
+      "primary": false,
+      "compliance": [
+        "GDPR"
+      ],
+      "languages": [
+        "en",
+        "fr",
+        "de"
+      ],
+      "latency_target_ms": 120
+    },
+    "ap-southeast-1": {
+      "name": "Asia Pacific (Singapore)",
+      "primary": false,
+      "compliance": [
+        "PDPA"
+      ],
+      "languages": [
+        "en",
+        "zh",
+        "ja"
+      ],
+      "latency_target_ms": 150
+    }
+  },
+  "languages": {
+    "en": {
+      "name": "English",
+      "default": true
+    },
+    "es": {
+      "name": "Espa\u00f1ol",
+      "default": false
+    },
+    "fr": {
+      "name": "Fran\u00e7ais",
+      "default": false
+    },
+    "de": {
+      "name": "Deutsch",
+      "default": false
+    },
+    "ja": {
+      "name": "\u65e5\u672c\u8a9e",
+      "default": false
+    },
+    "zh": {
+      "name": "\u4e2d\u6587",
+      "default": false
+    }
+  },
+  "compliance": {
+    "GDPR": {
+      "regions": [
+        "eu-west-1"
+      ],
+      "data_retention_days": 365,
+      "anonymization_required": true,
+      "consent_required": true
+    },
+    "CCPA": {
+      "regions": [
+        "us-west-2"
+      ],
+      "data_retention_days": 365,
+      "right_to_delete": true,
+      "opt_out_required": true
+    },
+    "PDPA": {
+      "regions": [
+        "ap-southeast-1"
+      ],
+      "data_retention_days": 180,
+      "consent_required": true,
+      "data_portability": true
+    }
+  }
+}
