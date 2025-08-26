@@ -1,0 +1,62 @@
+{
+  "overall_pass": true,
+  "total_gates": 4,
+  "passed_gates": 3,
+  "average_score": 0.8854166666666666,
+  "execution_time": 0.48736572265625,
+  "critical_gates_passed": true,
+  "gate_results": {
+    "Functionality Tests": {
+      "passed": true,
+      "score": 1.0,
+      "details": {
+        "bundle_test": "PASS",
+        "bind_test": "PASS",
+        "similarity_test": "PASS - similarity: -0.1260",
+        "error_handling": "PASS - validation error caught",
+        "zero_vector_test": "PASS",
+        "dimension_validation": "PASS"
+      }
+    },
+    "Performance Tests": {
+      "passed": false,
+      "score": 0.6666666666666666,
+      "details": {
+        "bundle_time": "0.007s",
+        "search_time": "0.046s",
+        "matrix_time": "0.088s",
+        "bundle_throughput_hvs_per_sec_status": "PASS (14906 >= 1000)",
+        "search_throughput_hvs_per_sec_status": "PASS (10884 >= 5000)",
+        "similarity_matrix_comparisons_per_sec_status": "FAIL (7135 < 10000)"
+      }
+    },
+    "Integration Tests": {
+      "passed": true,
+      "score": 1.0,
+      "details": {
+        "data_compatibility": "PASS - systems compatible",
+        "performance_consistency": "PASS - norms: 7.175 vs 7.175",
+        "timing_robust": "0.002s",
+        "timing_scalable": "0.001s",
+        "error_propagation": "PASS - handled mixed data"
+      }
+    },
+    "Security Tests": {
+      "passed": true,
+      "score": 0.875,
+      "details": {
+        "input_validation_0": "PASS - rejected malicious input",
+        "input_validation_1": "PASS - rejected malicious input",
+        "input_validation_2": "PASS - rejected malicious input",
+        "resource_limits": "PASS - security limit enforced",
+        "checksum_generation": "PASS - checksum length: 16",
+        "memory_safety": "PASS - handled large operations",
+        "secure_random": "PASS - generates different vectors"
+      }
+    }
+  },
+  "recommendations": [
+    "Improve similarity_matrix_comparisons_per_sec: current 7135, target 10000"
+  ],
+  "timestamp": 1756184259.1331465
+}

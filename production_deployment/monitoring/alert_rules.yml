@@ -1,0 +1,47 @@
+groups:
+- name: hd-compute-alerts
+  rules:
+  - alert: HDComputeAPIDown
+    expr: up{job="hd-compute-api"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "HD-Compute API is down"
+      description: "HD-Compute API has been down for more than 1 minute."
+
+  - alert: HighMemoryUsage
+    expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100 > 80
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage detected"
+      description: "Memory usage is above 80% for {{ $labels.pod }}"
+
+  - alert: HighCPUUsage
+    expr: rate(container_cpu_usage_seconds_total[5m]) * 100 > 80
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage detected"
+      description: "CPU usage is above 80% for {{ $labels.pod }}"
+
+  - alert: SlowResponseTime
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Slow response time detected"
+      description: "95th percentile response time is above 2 seconds"
+
+  - alert: HighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High error rate detected"
+      description: "Error rate is above 5%"
