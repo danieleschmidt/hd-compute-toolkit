@@ -19,7 +19,7 @@
     {
       "name": "Performance Baseline",
       "status": "PASS",
-      "details": "Throughput: 22348 HVs/sec"
+      "details": "Throughput: 22439 HVs/sec"
     },
     {
       "name": "Global Readiness",
@@ -33,5 +33,5 @@
     "warnings": 2,
     "score": 0.6
   },
-  "timestamp": 1756184381.4672298
+  "timestamp": 1756326873.5960555
 }
