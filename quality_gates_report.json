@@ -1,33 +1,33 @@
 {
   "overall_pass": true,
   "total_gates": 4,
-  "passed_gates": 3,
-  "average_score": 0.8854166666666666,
-  "execution_time": 0.48736572265625,
+  "passed_gates": 4,
+  "average_score": 0.96875,
+  "execution_time": 0.5018856525421143,
   "critical_gates_passed": true,
   "gate_results": {
+    "Performance Tests": {
+      "passed": true,
+      "score": 1.0,
+      "details": {
+        "bundle_time": "0.008s",
+        "search_time": "0.051s",
+        "matrix_time": "0.056s",
+        "bundle_throughput_hvs_per_sec_status": "PASS (12324 >= 1000)",
+        "search_throughput_hvs_per_sec_status": "PASS (9735 >= 5000)",
+        "similarity_matrix_comparisons_per_sec_status": "PASS (11230 >= 10000)"
+      }
+    },
     "Functionality Tests": {
       "passed": true,
       "score": 1.0,
       "details": {
         "bundle_test": "PASS",
         "bind_test": "PASS",
-        "similarity_test": "PASS - similarity: -0.1260",
+        "similarity_test": "PASS - similarity: -0.1780",
         "error_handling": "PASS - validation error caught",
         "zero_vector_test": "PASS",
         "dimension_validation": "PASS"
-      }
-    },
-    "Performance Tests": {
-      "passed": false,
-      "score": 0.6666666666666666,
-      "details": {
-        "bundle_time": "0.007s",
-        "search_time": "0.046s",
-        "matrix_time": "0.088s",
-        "bundle_throughput_hvs_per_sec_status": "PASS (14906 >= 1000)",
-        "search_throughput_hvs_per_sec_status": "PASS (10884 >= 5000)",
-        "similarity_matrix_comparisons_per_sec_status": "FAIL (7135 < 10000)"
       }
     },
     "Integration Tests": {
@@ -36,7 +36,7 @@
       "details": {
         "data_compatibility": "PASS - systems compatible",
         "performance_consistency": "PASS - norms: 7.175 vs 7.175",
-        "timing_robust": "0.002s",
+        "timing_robust": "0.003s",
         "timing_scalable": "0.001s",
         "error_propagation": "PASS - handled mixed data"
       }
@@ -55,8 +55,6 @@
       }
     }
   },
-  "recommendations": [
-    "Improve similarity_matrix_comparisons_per_sec: current 7135, target 10000"
-  ],
-  "timestamp": 1756184259.1331465
+  "recommendations": [],
+  "timestamp": 1756326872.2832763
 }
